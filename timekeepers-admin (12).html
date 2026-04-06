@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HourGuard — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Josefin+Sans:wght@200;300;400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#B8975A;--gold-l:#D4B97A;--dark:#0E0C0A;--surf:#1A1714;--surf2:#231F1B;--surf3:#2C2720;
+  --bdr:#2E2820;--dim:#8A7F72;--mid:#C4B8A8;--bright:#EDE6DA;
+  --serif:'Cormorant Garamond',serif;--sans:'Josefin Sans',sans-serif;--mono:'JetBrains Mono',monospace;
+  --green:#5A8B7A;--green-l:#7ABCAB;--red:#A33A3A;--red-l:#CC6060;--amber:#8B7A2A;--amber-l:#C4AB50;
+}
+html{scroll-behavior:smooth}
+body{background:var(--dark);color:var(--bright);font-family:var(--sans);font-size:13px;min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;background:var(--surf);border-bottom:1px solid var(--gold);padding:0.85rem 1.5rem;position:sticky;top:0;z-index:100;gap:1rem}
+.nav-logo{font-family:var(--serif);font-size:1.25rem;font-weight:300;color:var(--gold);font-style:italic;letter-spacing:0.04em;flex-shrink:0}
+.nav-logo span{font-style:normal;font-weight:600}
+.nav-badge{font-size:0.45rem;letter-spacing:0.2em;text-transform:uppercase;background:var(--red);color:#fff;padding:2px 7px;margin-left:0.5rem;vertical-align:middle}
+.nav-key{display:flex;align-items:center;gap:0.5rem;flex:1;justify-content:flex-end}
+.nav-key label{font-size:0.5rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.nav-key input{background:var(--surf2);border:0.5px solid var(--bdr);color:var(--bright);font-family:var(--mono);font-size:0.58rem;padding:0.35rem 0.7rem;outline:none;width:210px;transition:border-color 0.2s}
+.nav-key input:focus{border-color:var(--gold)}
+.key-status{font-size:0.48rem;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.key-status.live{color:var(--green-l)}.key-status.offline{color:var(--dim)}
+
+/* SLOT ROW */
+.slot-row{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--bdr)}
+.slot-btn{background:var(--surf);padding:0.55rem 0.5rem;cursor:pointer;text-align:center;transition:background 0.15s;border-bottom:2px solid transparent}
+.slot-btn:hover{background:var(--surf2)}
+.slot-btn.active{background:var(--surf2);border-bottom-color:var(--gold)}
+.slot-btn.filled{border-bottom-color:var(--amber-l)}
+.slot-btn.authenticated{border-bottom-color:var(--green-l)}
+.slot-btn.live{border-bottom-color:var(--gold)}
+.slot-btn.rejected{border-bottom-color:var(--red-l)}
+.slot-num{font-size:0.44rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--dim);margin-bottom:1px}
+.slot-label{font-size:0.56rem;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.slot-label.empty{color:var(--bdr)}
+
+/* WORKSPACE */
+.workspace{display:grid;grid-template-columns:420px 1fr;min-height:calc(100vh - 95px)}
+.form-col{border-right:0.5px solid var(--bdr);padding:1.2rem 1.5rem;overflow-y:auto;height:calc(100vh - 95px)}
+.pipe-col{padding:1.2rem 1.5rem;overflow-y:auto;height:calc(100vh - 95px)}
+
+/* COL TITLE */
+.col-title{font-size:0.5rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:0.5px solid var(--bdr)}
+
+/* FIELDS */
+.field{margin-bottom:0.75rem}
+.field label{display:block;font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:0.28rem}
+.field input,.field select,.field textarea{width:100%;background:var(--surf2);border:0.5px solid var(--bdr);color:var(--bright);font-family:var(--sans);font-size:0.7rem;padding:0.48rem 0.72rem;outline:none;transition:border-color 0.2s;-webkit-appearance:none;appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+.field input::placeholder,.field textarea::placeholder{color:var(--dim)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A7F72'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.6rem center;padding-right:1.6rem}
+.field select option{background:var(--surf2);color:var(--bright)}
+.field textarea{resize:none;height:60px;line-height:1.6;font-family:var(--sans)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem}
+.ferr{font-size:0.48rem;color:var(--red-l);margin-top:0.22rem;display:none}
+.ferr.show{display:block}
+
+/* IMAGE UPLOAD */
+.img-upload-btn{
+  width:100%;border:0.5px dashed var(--bdr);background:var(--surf2);
+  color:var(--dim);font-family:var(--sans);font-size:0.65rem;letter-spacing:0.12em;
+  text-transform:uppercase;padding:0.85rem;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:0.75rem;
+  position:relative;user-select:none;-webkit-user-select:none;
+}
+.img-upload-btn:hover{border-color:var(--gold);color:var(--gold)}
+.img-upload-btn.has-img{border-style:solid;border-color:var(--green);color:var(--green-l)}
+.img-upload-btn svg{width:16px;height:16px;flex-shrink:0}
+
+/* Photo preview — shown below the button, full width */
+.img-preview-area{display:none;margin-bottom:0.75rem;position:relative}
+.img-preview-area.show{display:block}
+.img-preview-area img{width:100%;max-height:320px;object-fit:contain;background:var(--surf2);border:0.5px solid var(--green);display:block}
+.img-preview-area .img-preview-label{
+  background:var(--green);color:#fff;
+  font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;
+  padding:3px 8px;display:inline-block;margin-bottom:0;
+}
+.img-preview-area .img-remove{
+  position:absolute;top:22px;right:0;background:var(--red);color:#fff;border:none;
+  font-family:var(--sans);font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;
+  padding:3px 8px;cursor:pointer;
+}
+.img-preview-area .img-filename{font-size:0.52rem;color:var(--dim);padding:4px 6px;background:var(--surf2);border:0.5px solid var(--bdr);border-top:none}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:0.82rem;background:var(--gold);border:none;color:var(--dark);font-family:var(--sans);font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;margin-top:0.4rem;display:flex;align-items:center;justify-content:center;gap:0.4rem}
+.btn-primary:hover{background:var(--gold-l)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-sec{width:100%;padding:0.6rem;background:none;border:0.5px solid var(--bdr);color:var(--dim);font-family:var(--sans);font-size:0.56rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;margin-top:0.35rem}
+.btn-sec:hover{border-color:var(--mid);color:var(--mid)}
+.btn-danger{border-color:var(--red);color:var(--red-l)}
+.btn-danger:hover{background:var(--red);color:#fff}
+
+/* PIPELINE */
+.pipe-steps{display:grid;grid-template-columns:1fr 18px 1fr 18px 1fr;align-items:center;margin-bottom:0.9rem}
+.ps{background:var(--surf2);border:0.5px solid var(--bdr);padding:0.45rem 0.4rem;text-align:center;transition:all 0.25s}
+.ps-label{font-size:0.4rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:1px}
+.ps-name{font-size:0.54rem;color:var(--mid)}
+.ps-arrow{text-align:center;color:var(--bdr);font-size:0.7rem}
+.ps.active{border-color:var(--gold);background:var(--surf3)}.ps.active .ps-name{color:var(--gold)}
+.ps.done{border-color:var(--green)}.ps.done .ps-name{color:var(--green-l)}
+
+/* CONSOLE */
+.console{background:var(--dark);border:0.5px solid var(--bdr);font-family:var(--mono);font-size:0.58rem;height:180px;overflow-y:auto;padding:0.55rem}
+.log-line{padding:1px 0;line-height:1.5}
+.log-ts{color:var(--bdr)}.log-info{color:var(--dim)}.log-gold{color:var(--gold)}
+.log-check{color:var(--green-l)}.log-warn{color:var(--amber-l)}.log-err{color:var(--red-l)}
+.spinner{display:inline-block;width:9px;height:9px;border:1.5px solid var(--bdr);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* REPORT */
+.report-card{border:0.5px solid var(--bdr);background:var(--surf2);margin-top:0.9rem}
+.report-head{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 0.9rem;border-bottom:0.5px solid var(--bdr)}
+.report-score{font-family:var(--serif);font-size:1.5rem;font-weight:300;line-height:1}
+.report-verdict{font-size:0.46rem;letter-spacing:0.14em;text-transform:uppercase;padding:3px 9px;border:0.5px solid}
+.vp{border-color:var(--green);color:var(--green-l)}.vr{border-color:var(--amber);color:var(--amber-l)}.vf{border-color:var(--red);color:var(--red-l)}
+.report-body{padding:0.75rem 0.9rem;display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.rbt{font-size:0.44rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.35rem}
+.ri{font-size:0.56rem;color:var(--dim);margin-bottom:2px;line-height:1.4}.ri::before{content:'• '}
+.report-combined{padding:0.75rem 0.9rem;border-top:0.5px solid var(--bdr);font-size:0.6rem;color:var(--mid);line-height:1.6}
+.report-actions{padding:0.6rem 0.9rem;border-top:0.5px solid var(--bdr);display:flex;gap:0.4rem}
+.ra{font-family:var(--sans);font-size:0.52rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.45rem 0.9rem;cursor:pointer;border:0.5px solid;transition:all 0.2s;background:none}
+.ra-green{border-color:var(--green);color:var(--green-l)}.ra-green:hover{background:var(--green);color:#fff}
+.ra-gold{border-color:var(--gold);color:var(--gold)}.ra-gold:hover{background:var(--gold);color:var(--dark)}
+.ra-dim{border-color:var(--bdr);color:var(--dim)}.ra-dim:hover{border-color:var(--mid);color:var(--mid)}
+
+/* ALL SLOTS GRID */
+.live-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bdr);margin-top:0.75rem}
+
+/* OFFLINE CHECKLIST */
+.cl-brand-info{background:var(--surf2);border:0.5px solid var(--bdr);padding:0.75rem;margin-bottom:0.9rem;font-size:0.58rem;color:var(--dim);line-height:1.6}
+.cl-brand-info strong{color:var(--mid)}
+/* Automated inspection card styles */
+.vi-header{background:linear-gradient(135deg,#1A1714,#231F1B);padding:1rem 1.2rem;border-bottom:0.5px solid var(--gold);margin-bottom:0.9rem}
+.vi-score-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem}
+.vi-score-num{font-family:var(--serif);font-size:2rem;font-weight:300;line-height:1}
+.vi-verdict{font-size:0.52rem;letter-spacing:0.18em;text-transform:uppercase}
+.vi-bar{height:5px;background:var(--bdr);margin-bottom:0.5rem;overflow:hidden}
+.vi-bar-fill{height:100%;transition:width 0.6s,background 0.6s}
+.vi-auto-row{display:flex;align-items:center;justify-content:space-between;font-size:0.52rem;color:var(--dim)}
+.vi-section{margin-bottom:0.75rem}
+.vi-section-title{font-size:0.44rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);padding:0.35rem 0.6rem;background:var(--surf2);border-left:2px solid var(--gold);margin-bottom:0.4rem}
+.vi-check{display:flex;align-items:flex-start;gap:0.6rem;padding:0.5rem 0.6rem;margin-bottom:2px;border-left:2px solid transparent}
+.vi-check.pass{background:rgba(90,139,122,0.07);border-left-color:var(--green)}
+.vi-check.fail{background:rgba(163,58,58,0.08);border-left-color:var(--red-l)}
+.vi-check.warn{background:rgba(139,122,42,0.08);border-left-color:var(--amber-l)}
+.vi-check.manual{background:var(--surf2);border-left-color:var(--bdr)}
+.vi-icon{font-size:0.75rem;flex-shrink:0;margin-top:1px;width:14px;text-align:center}
+.vi-text{flex:1}
+.vi-label{font-size:0.6rem;color:var(--bright);line-height:1.35;margin-bottom:1px}
+.vi-detail{font-size:0.54rem;color:var(--dim);line-height:1.4}
+.vi-badge{font-size:0.42rem;letter-spacing:0.14em;text-transform:uppercase;padding:1px 6px;border:0.5px solid;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.vi-badge.pass{border-color:var(--green);color:var(--green-l)}
+.vi-badge.fail{border-color:var(--red-l);color:var(--red-l)}
+.vi-badge.warn{border-color:var(--amber-l);color:var(--amber-l)}
+.vi-badge.check{border-color:var(--dim);color:var(--dim)}
+.vi-run-btn{width:100%;padding:0.85rem;background:var(--gold);border:none;color:var(--dark);font-family:var(--sans);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;margin-top:0.75rem}
+.vi-run-btn:hover{background:var(--gold-l)}
+.vi-flag-row{display:flex;align-items:flex-start;gap:0.5rem;padding:0.45rem 0.6rem;margin-bottom:2px;background:rgba(163,58,58,0.06);border-left:2px solid var(--red-l)}
+.vi-flag-text{font-size:0.58rem;color:var(--red-l);line-height:1.4}
+.cl-score-bar{height:6px;background:var(--bdr);margin:0.75rem 0;border-radius:3px;overflow:hidden}
+.cl-score-fill{height:100%;border-radius:3px;transition:width 0.4s,background 0.4s}
+.cl-run-btn{width:100%;padding:0.75rem;background:var(--gold);border:none;color:var(--dark);font-family:var(--sans);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;margin-top:0.5rem}
+.cl-run-btn:hover{background:var(--gold-l)}
+.lc{background:var(--surf);padding:0.6rem;cursor:pointer;transition:background 0.15s}
+.lc:hover{background:var(--surf2)}
+.lc-img{aspect-ratio:1;background:var(--surf2);margin-bottom:0.35rem;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.lc-img img{width:100%;height:100%;object-fit:cover}
+.lc-brand{font-size:0.42rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold)}
+.lc-name{font-size:0.58rem;color:var(--bright);font-family:var(--serif)}
+.lc-pill{display:inline-block;font-size:0.4rem;letter-spacing:0.1em;text-transform:uppercase;padding:1px 5px;border:0.5px solid;margin-top:3px}
+
+/* ── MOBILE TAB BAR (hidden on desktop) ── */
+.mob-tabs{display:none}
+
+/* ── RESPONSIVE ── */
+@media screen and (max-width:768px){
+  /* NAV: compact single row on mobile */
+  .nav{flex-direction:row;flex-wrap:wrap;padding:0.6rem 0.9rem;gap:0.4rem}
+  .nav-logo{font-size:1.1rem}
+  .nav-badge{font-size:0.4rem;padding:1px 5px}
+  .nav-key{width:100%;justify-content:flex-start;gap:0.4rem}
+  .nav-key label{display:none}
+  .nav-key input{flex:1;width:auto;font-size:16px;padding:0.4rem 0.6rem}
+  .key-status{font-size:0.44rem}
+
+  /* SLOT ROW */
+  .slot-row{grid-template-columns:repeat(6,1fr)}
+  .slot-btn{padding:0.4rem 0.2rem}
+  .slot-num{font-size:0.34rem;letter-spacing:0.06em}
+  .slot-label{font-size:0.42rem}
+
+  /* WORKSPACE: single column, natural scroll */
+  .workspace{grid-template-columns:1fr;min-height:auto;height:auto}
+  .form-col{height:auto;overflow-y:visible;border-right:none;border-bottom:0.5px solid var(--bdr);padding:0.9rem 1rem}
+  .pipe-col{height:auto;overflow-y:visible;padding:0.9rem 1rem}
+
+  /* Mobile tab bar — sits between slot row and workspace, not sticky (avoids nav overlap) */
+  .mob-tabs{
+    display:flex;background:var(--surf);border-bottom:0.5px solid var(--bdr);
+  }
+  .mob-tab{
+    flex:1;text-align:center;padding:0.65rem 0.5rem;
+    font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mob-tab.active{color:var(--gold);border-bottom-color:var(--gold);background:var(--surf2)}
+
+  /* Hide inactive column */
+  .form-col.mob-hidden{display:none!important}
+  .pipe-col.mob-hidden{display:none!important}
+
+  /* iOS input zoom prevention */
+  .field input,.field select,.field textarea{font-size:16px!important}
+  .ferr{font-size:0.55rem}
+
+  /* Image */
+  .img-upload-btn{padding:1rem;font-size:0.68rem;margin-bottom:0.75rem}
+  .img-preview-area img{max-height:240px}
+
+  /* Buttons */
+  .btn-primary{padding:1rem;font-size:0.66rem;letter-spacing:0.14em;margin-top:0.6rem;min-height:48px}
+  .btn-sec{padding:0.75rem;font-size:0.6rem;margin-top:0.4rem;min-height:44px}
+
+  /* Stacked field rows */
+  .field-row{grid-template-columns:1fr}
+
+  /* Pipeline steps — tighter */
+  .pipe-steps{grid-template-columns:1fr 12px 1fr 12px 1fr;margin-bottom:0.75rem}
+  .ps{padding:0.35rem 0.15rem}
+  .ps-label{font-size:0.32rem}
+  .ps-name{font-size:0.44rem}
+  .ps-arrow{font-size:0.6rem}
+
+  /* Console */
+  .console{height:200px;font-size:0.58rem}
+
+  /* Checklist items bigger tap targets */
+  .cl-item{padding:0.6rem 0.5rem;margin-bottom:0.5rem}
+  .cl-item input[type=checkbox]{width:18px;height:18px;flex-shrink:0}
+  .cl-item label{font-size:0.64rem}
+  .cl-run-btn{padding:1rem;font-size:0.64rem;min-height:48px}
+
+  /* Report */
+  .report-body{grid-template-columns:1fr}
+  .report-actions{flex-wrap:wrap;gap:0.4rem}
+  .ra{flex:1 1 auto;text-align:center;padding:0.65rem 0.5rem;font-size:0.54rem;min-height:44px}
+
+  /* Live slots grid */
+  .live-grid{grid-template-columns:repeat(2,1fr)}
+
+  /* Reasoning section */
+  .reason-row{flex-direction:column!important;gap:0.5rem!important}
+  .reason-item{min-width:0!important}
+}
+
+@media screen and (max-width:390px){
+  .nav-logo{font-size:1rem}
+  .slot-label{display:none}
+  .slot-num{font-size:0.38rem}
+  .slot-btn{padding:0.45rem 0.15rem}
+  .live-grid{grid-template-columns:1fr 1fr 1fr}
+  .btn-primary{font-size:0.6rem}
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div style="display:flex;align-items:center;flex-shrink:0">
+    <div class="nav-logo">Hour<span>Guard</span></div>
+    <span class="nav-badge">Admin</span>
+  </div>
+  <div class="nav-key">
+    <label>Anthropic API Key</label>
+    <input type="password" id="api-key-input" placeholder="Google AI key (AIza…) — cheapest · or Anthropic (sk-ant…)" oninput="saveApiKey()" autocomplete="off">
+    <div class="key-status offline" id="key-status">Offline mode</div>
+  </div>
+</div>
+
+<div class="slot-row" id="slot-row"></div>
+
+<!-- Mobile tab switcher — only visible on small screens -->
+<div class="mob-tabs" id="mob-tabs">
+  <div class="mob-tab active" id="mob-tab-form" onclick="mobSwitch('form')">📋 Post Watch</div>
+  <div class="mob-tab" id="mob-tab-pipe" onclick="mobSwitch('pipe')">🔬 Pipeline</div>
+</div>
+
+<div class="workspace">
+  <!-- LEFT: FORM -->
+  <div class="form-col">
+    <div class="col-title" id="form-title">Slot 1 — Post a Watch</div>
+
+    <!-- File input — visible label triggers it natively, no JS click() needed -->
+    <label class="img-upload-btn" id="img-upload-btn" for="img-file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4-4 4M12 6v10"/></svg>
+      <span id="img-btn-text">Upload Watch Photo</span>
+      <input type="file" id="img-file" accept="image/*" onchange="handleImage(event)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+    </label>
+
+    <div class="field">
+      <label>Brand</label>
+      <select id="f-brand" onchange="liveTitle()">
+        <option value="">— Select brand —</option>
+        <optgroup label="Ultra Luxury">
+          <option>Rolex</option><option>Patek Philippe</option><option>Audemars Piguet</option>
+          <option>A. Lange &amp; Söhne</option><option>Vacheron Constantin</option>
+          <option>Jaeger-LeCoultre</option><option>Breguet</option><option>Richard Mille</option>
+        </optgroup>
+        <optgroup label="Luxury">
+          <option>IWC</option><option>Cartier</option><option>Hublot</option>
+          <option>Panerai</option><option>Omega</option><option>Breitling</option>
+          <option>TAG Heuer</option><option>Tudor</option>
+        </optgroup>
+        <optgroup label="Accessible Luxury">
+          <option>Nomos Glashütte</option><option>Longines</option><option>Rado</option>
+          <option>Sinn</option><option>Frederique Constant</option><option>Mido</option>
+          <option>Tissot</option><option>Hamilton</option><option>Certina</option>
+          <option>Ball Watch</option><option>Raymond Weil</option><option>Seiko</option>
+        </optgroup>
+        <optgroup label="Mid-Market">
+          <option>Citizen</option><option>Casio G-Shock</option><option>Bulova</option>
+          <option>Movado</option><option>Victorinox</option><option>Fossil</option>
+          <option>Timex</option><option>Vincero</option>
+        </optgroup>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Model</label><input id="f-model" placeholder="e.g. Submariner Date" oninput="liveTitle()"></div>
+      <div class="field"><label>Reference No.</label><input id="f-ref" placeholder="e.g. 126610LN"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Serial Number</label><input id="f-serial" placeholder="Required for authentication"></div>
+      <div class="field"><label>Year</label><input type="number" id="f-year" placeholder="e.g. 2021" min="1900" max="2025"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Case Material</label>
+        <select id="f-case">
+          <option value="">—</option>
+          <option>Stainless Steel</option><option>Yellow Gold</option><option>White Gold</option>
+          <option>Rose Gold</option><option>Platinum</option><option>Titanium</option><option>Two-Tone</option>
+        </select>
+      </div>
+      <div class="field"><label>Dial Colour</label><input id="f-dial" placeholder="e.g. Black"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Condition</label>
+        <select id="f-condition">
+          <option value="">— Select —</option>
+          <option>Unworn / New Old Stock</option><option>Excellent</option>
+          <option>Very Good</option><option>Good</option><option>Fair</option>
+        </select>
+      </div>
+      <div class="field"><label>Box &amp; Papers</label>
+        <select id="f-papers"><option>Full set</option><option>Papers only</option><option>Box only</option><option>None</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Price (USD)</label>
+        <input type="number" id="f-price" placeholder="Min. $250" min="250" oninput="checkPrice()">
+        <div class="ferr" id="f-price-err">Minimum price is $250</div>
+      </div>
+      <div class="field"><label>Listing Type</label>
+        <select id="f-type"><option value="buy">Buy Now</option><option value="auction">Auction</option><option value="both">Buy Now + Auction</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f-desc" placeholder="Provenance, service history, reason for sale…"></textarea></div>
+
+    <button class="btn-primary" id="post-btn" onclick="postAndAuthenticate()">Post &amp; Audit</button>
+    <button class="btn-sec" onclick="saveOnly()">Save Without Authenticating</button>
+    <button class="btn-sec btn-danger" onclick="clearSlot()">Clear This Slot</button>
+
+    <!-- Photo preview — shown here so user can confirm the image was received -->
+    <div class="img-preview-area" id="img-preview-area">
+      <div class="img-preview-label">✓ Photo attached — ready for AI analysis</div>
+      <img id="img-prev" alt="Watch photo" style="display:none">
+      <div class="img-filename" id="img-filename"></div>
+      <button class="img-remove" onclick="removeImage()">✕ Remove</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: PIPELINE -->
+  <div class="pipe-col">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:0.5px solid var(--bdr)">
+      <div class="col-title" style="margin-bottom:0;border:none;padding:0">Audit Pipeline</div>
+      <div id="mode-badge" style="font-size:0.44rem;letter-spacing:0.14em;text-transform:uppercase;padding:3px 8px;border:0.5px solid var(--dim);color:var(--dim)">Database Mode</div>
+    </div>
+
+    <div class="pipe-steps">
+      <div class="ps" id="ps-db"><div class="ps-label">Step 1</div><div class="ps-name">DB Lookup</div></div>
+      <div class="ps-arrow">›</div>
+      <div class="ps" id="ps-1"><div class="ps-label">Step 2</div><div class="ps-name">Checklist</div></div>
+      <div class="ps-arrow">›</div>
+      <div class="ps" id="ps-2"><div class="ps-label">Step 3</div><div class="ps-name">Verdict</div></div>
+    </div>
+
+    <div class="console" id="console-log">
+      <div class="log-line"><span class="log-ts">[--:--:--]</span> <span class="log-info">Fill in the form and press Post &amp; Audit.</span></div>
+    </div>
+
+    <!-- Offline checklist panel — shown when no API key -->
+    <div id="checklist-panel" style="display:none;margin-top:0.9rem"></div>
+
+    <div id="report-out" style="display:none"></div>
+
+    <div style="margin-top:1.2rem">
+      <div class="col-title">All Slots</div>
+      <div class="live-grid" id="live-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const SLOT_COUNT = 6;
+let slots = JSON.parse(localStorage.getItem('tk_slots') || 'null') ||
+  Array.from({length:SLOT_COUNT},(_,i)=>({id:i+1,brand:'',model:'',ref:'',year:'',serial:'',condition:'',price:'',type:'buy',papers:'Full set',dial:'',casemat:'',desc:'',imageData:'',status:'empty',authReport:null}));
+let activeSlot = 0;
+let authRunning = false;
+let watchDB = JSON.parse(localStorage.getItem('tk_watch_db') || '[]');
+let authHistory = JSON.parse(localStorage.getItem('tk_auth_history') || '[]');
+
+function saveState() {
+  localStorage.setItem('tk_slots', JSON.stringify(slots));
+  localStorage.setItem('tk_auth_history', JSON.stringify(authHistory));
+}
+function saveWatchDB() { localStorage.setItem('tk_watch_db', JSON.stringify(watchDB)); }
+
+// ── API KEY ───────────────────────────────────────────────────────────────────
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  localStorage.setItem('hg_api_key', key);
+  const keyType = getKeyType(key);
+  const el = document.getElementById('key-status');
+  if (keyType === 'gemini') {
+    el.textContent = 'Gemini ✓ Optimised';
+    el.className = 'key-status live';
+  } else if (keyType === 'anthropic') {
+    el.textContent = 'Claude ✓ Fallback';
+    el.className = 'key-status live';
+  } else {
+    el.textContent = 'Offline mode';
+    el.className = 'key-status offline';
+  }
+}
+
+// ── SLOT ROW ──────────────────────────────────────────────────────────────────
+function renderSlotRow() {
+  document.getElementById('slot-row').innerHTML = slots.map((s,i)=>`
+    <div class="slot-btn ${i===activeSlot?'active':''} ${s.status!=='empty'?s.status:''}" onclick="switchSlot(${i})">
+      <div class="slot-num">Slot ${i+1}</div>
+      <div class="slot-label ${s.brand?'':'empty'}">${s.brand||'Empty'}</div>
+    </div>`).join('');
+}
+
+function switchSlot(i) {
+  saveFormToSlot();
+  activeSlot = i;
+  loadSlotToForm(i);
+  renderSlotRow();
+  renderLiveGrid();
+  document.getElementById('report-out').style.display = 'none';
+  resetSteps();
+  clearConsole();
+  // On mobile, go back to form when switching slots
+  if (window.innerWidth <= 768) mobSwitch('form');
+}
+
+// ── FORM ↔ SLOT ───────────────────────────────────────────────────────────────
+function loadSlotToForm(i) {
+  const s = slots[i];
+  document.getElementById('form-title').textContent = `Slot ${i+1} — ${s.brand?s.brand+(s.model?' '+s.model:''):'Post a Watch'}`;
+  document.getElementById('f-brand').value     = s.brand     || '';
+  document.getElementById('f-model').value     = s.model     || '';
+  document.getElementById('f-ref').value       = s.ref       || '';
+  document.getElementById('f-serial').value    = s.serial    || '';
+  document.getElementById('f-year').value      = s.year      || '';
+  document.getElementById('f-case').value      = s.casemat   || '';
+  document.getElementById('f-dial').value      = s.dial      || '';
+  document.getElementById('f-condition').value = s.condition || '';
+  document.getElementById('f-papers').value    = s.papers    || 'Full set';
+  document.getElementById('f-price').value     = s.price     || '';
+  document.getElementById('f-type').value      = s.type      || 'buy';
+  document.getElementById('f-desc').value      = s.desc      || '';
+  if (s.imageData) {
+    const img = document.getElementById('img-prev');
+    if (img) { img.src = s.imageData; img.style.display = 'block'; }
+    showImagePreview(s.imageData, 'Saved photo');
+  } else {
+    removeImage();
+  }
+}
+
+function saveFormToSlot() {
+  const old = slots[activeSlot];
+  slots[activeSlot] = {
+    id:activeSlot+1,
+    brand:     document.getElementById('f-brand').value,
+    model:     document.getElementById('f-model').value,
+    ref:       document.getElementById('f-ref').value,
+    serial:    document.getElementById('f-serial').value,
+    year:      document.getElementById('f-year').value,
+    casemat:   document.getElementById('f-case').value,
+    dial:      document.getElementById('f-dial').value,
+    condition: document.getElementById('f-condition').value,
+    papers:    document.getElementById('f-papers').value,
+    price:     document.getElementById('f-price').value,
+    type:      document.getElementById('f-type').value,
+    desc:      document.getElementById('f-desc').value,
+    imageData: old.imageData || '',
+    status:    old.status,
+    authReport:old.authReport
+  };
+  const s = slots[activeSlot];
+  if ((s.brand || s.model) && s.status === 'empty') s.status = 'filled';
+}
+
+function saveOnly() {
+  saveFormToSlot();
+  if (slots[activeSlot].brand || slots[activeSlot].model) slots[activeSlot].status = 'filled';
+  saveState(); renderSlotRow(); renderLiveGrid();
+  log('check', `Slot ${activeSlot+1} saved.`);
+}
+
+function clearSlot() {
+  if (!confirm(`Clear slot ${activeSlot+1}?`)) return;
+  slots[activeSlot] = {id:activeSlot+1,brand:'',model:'',ref:'',year:'',serial:'',condition:'',price:'',type:'buy',papers:'Full set',dial:'',casemat:'',desc:'',imageData:'',status:'empty',authReport:null};
+  saveState(); loadSlotToForm(activeSlot); renderSlotRow(); renderLiveGrid();
+  document.getElementById('report-out').style.display = 'none';
+  resetSteps(); clearConsole();
+}
+
+// ── IMAGE ─────────────────────────────────────────────────────────────────────
+function handleImage(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Compress via canvas before storing — keeps localStorage under quota
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // Cap at 800px wide — enough for display, small enough for storage
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.75);
+      slots[activeSlot].imageData = compressed;
+      showImagePreview(compressed, file.name);
+      // Try to save and warn if storage is still too full
+      try {
+        saveState();
+      } catch(storageErr) {
+        console.warn('Storage quota — trying lower quality');
+        // Fallback: compress harder
+        const fallback = canvas.toDataURL('image/jpeg', 0.4);
+        slots[activeSlot].imageData = fallback;
+        showImagePreview(fallback, file.name);
+        try { saveState(); } catch(e) {
+          alert('Storage full. Clear some slots before adding more photos.');
+        }
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showImagePreview(dataUrl, filename) {
+  const area = document.getElementById('img-preview-area');
+  const img  = document.getElementById('img-prev');
+  const fn   = document.getElementById('img-filename');
+  const btn  = document.getElementById('img-upload-btn');
+  const txt  = document.getElementById('img-btn-text');
+  if (area) area.classList.add('show');
+  if (img)  { img.src = dataUrl; img.style.display = 'block'; }
+  if (fn)   fn.textContent = filename || 'Photo attached';
+  if (btn)  btn.classList.add('has-img');
+  if (txt)  txt.textContent = 'Change Photo';
+}
+
+function removeImage() {
+  slots[activeSlot].imageData = '';
+  const area = document.getElementById('img-preview-area');
+  const img  = document.getElementById('img-prev');
+  const fn   = document.getElementById('img-filename');
+  const btn  = document.getElementById('img-upload-btn');
+  const txt  = document.getElementById('img-btn-text');
+  const fi   = document.getElementById('img-file');
+  if (area) area.classList.remove('show');
+  if (img)  { img.src = ''; img.style.display = 'none'; }
+  if (fn)   fn.textContent = '';
+  if (btn)  btn.classList.remove('has-img');
+  if (txt)  txt.textContent = 'Upload Watch Photo';
+  if (fi)   fi.value = '';
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function liveTitle() {
+  const b = document.getElementById('f-brand').value;
+  const m = document.getElementById('f-model').value;
+  document.getElementById('form-title').textContent = `Slot ${activeSlot+1} — ${b?(b+(m?' '+m:'')):'Post a Watch'}`;
+}
+function checkPrice() {
+  const v = parseFloat(document.getElementById('f-price').value);
+  document.getElementById('f-price-err').classList.toggle('show', v > 0 && v < 250);
+}
+
+// ── MOBILE TAB SWITCHER ───────────────────────────────────────────────────────
+function mobSwitch(tab) {
+  const formCol = document.querySelector('.form-col');
+  const pipeCol = document.querySelector('.pipe-col');
+  const tabForm = document.getElementById('mob-tab-form');
+  const tabPipe = document.getElementById('mob-tab-pipe');
+  if (!formCol || !pipeCol) return;
+  if (tab === 'form') {
+    formCol.classList.remove('mob-hidden');
+    pipeCol.classList.add('mob-hidden');
+    tabForm.classList.add('active');
+    tabPipe.classList.remove('active');
+  } else {
+    pipeCol.classList.remove('mob-hidden');
+    formCol.classList.add('mob-hidden');
+    tabPipe.classList.add('active');
+    tabForm.classList.remove('active');
+  }
+}
+function ts() { return new Date().toTimeString().slice(0,8); }
+function delay(ms) { return new Promise(r => setTimeout(r,ms)); }
+function log(type, msg) {
+  const c = document.getElementById('console-log');
+  const d = document.createElement('div');
+  d.className = 'log-line';
+  d.innerHTML = `<span class="log-ts">[${ts()}]</span> <span class="log-${type}">${msg}</span>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+function clearConsole() {
+  document.getElementById('console-log').innerHTML =
+    '<div class="log-line"><span class="log-ts">[--:--:--]</span> <span class="log-info">Ready.</span></div>';
+}
+
+// ── PIPELINE STEPS ────────────────────────────────────────────────────────────
+function setStep(n) {
+  ['ps-db','ps-1','ps-2'].forEach((id,i) => {
+    const el = document.getElementById(id); if (!el) return;
+    const nameEl = el.querySelectorAll('div')[1];
+    el.classList.remove('active','done');
+    if (n === -1) { if (nameEl) nameEl.style.color = ''; return; }
+    if (i < n)  { el.classList.add('done');   if (nameEl) nameEl.style.color = 'var(--green-l)'; }
+    if (i === n){ el.classList.add('active');  if (nameEl) nameEl.style.color = 'var(--gold)'; }
+    if (i > n)  { if (nameEl) nameEl.style.color = 'var(--mid)'; }
+  });
+}
+function resetSteps() { setStep(-1); }
+
+// ── COST-OPTIMISED API ROUTER ──────────────────────────────────────────────────
+// Tier 1 (free):    Offline brand database — serial, price, known fakes
+// Tier 2 ($0.00071/call): Gemini 2.5 Flash-Lite — text reasoning, no photo
+// Tier 3 ($0.00264/call): Gemini 2.5 Flash     — vision (photo provided)
+// Tier 4 ($0.02235/call): Claude Sonnet 4.6     — fallback if Anthropic key
+//
+// Saving vs all-Sonnet: ~97% cost reduction per authentication
+
+const GEMINI_FLASH_LITE = 'gemini-2.5-flash-lite-preview';   // $0.10/$0.40 per MTok
+const GEMINI_FLASH      = 'gemini-2.5-flash';                // $0.30/$2.50 per MTok  
+const GEMINI_BASE_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/';
+
+function getKeyType(key) {
+  if (!key) return 'none';
+  if (key.startsWith('AIza')) return 'gemini';
+  if (key.startsWith('sk-ant')) return 'anthropic';
+  return 'none';
+}
+
+// Call Gemini (Flash-Lite for text, Flash for vision)
+async function callGemini(systemPrompt, userContent, key, imageData=null) {
+  const hasImage = imageData && imageData.startsWith('data:');
+  const model = hasImage ? GEMINI_FLASH : GEMINI_FLASH_LITE;
+  const url = `${GEMINI_BASE_URL}${model}:generateContent?key=${key}`;
+
+  const parts = [];
+  if (hasImage) {
+    const m = imageData.match(/^data:([^;]+);base64,(.+)$/);
+    if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+  }
+  parts.push({ text: systemPrompt + '\n\n' + userContent });
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts }],
+      generationConfig: { maxOutputTokens: 1200, temperature: 0.1 },
+      systemInstruction: { parts: [{ text: 'You are a watch authentication expert. Respond ONLY with valid JSON, no markdown fences, no explanation.' }] }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error?.message || `Gemini HTTP ${res.status}`);
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!text) throw new Error('Empty Gemini response');
+  const clean = text.replace(/```json|```/g,'').trim();
+  try { return JSON.parse(clean); }
+  catch(e) { throw new Error('Gemini JSON parse failed: ' + clean.slice(0,150)); }
+}
+
+// Call Claude (Anthropic key fallback)
+async function callClaude(sys, userContent, key, imageData=null) {
+  let content;
+  if (imageData) {
+    const m = imageData.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9+.\-]+);base64,(.+)$/);
+    if (!m) throw new Error('Invalid image data URI');
+    content = [
+      {type:'image', source:{type:'base64', media_type:m[1], data:m[2]}},
+      {type:'text',  text:userContent}
+    ];
+  } else { content = userContent; }
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1200,system:sys,messages:[{role:'user',content}]})
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error?.message || `HTTP ${res.status}`);
+  if (!data.content?.length) throw new Error('Empty API response');
+  const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();
+  if (!text) throw new Error('No text in response');
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('JSON parse failed: ' + text.slice(0,150)); }
+}
+
+// Smart router — picks cheapest model for the task
+async function callAI(sys, userContent, key, imageData=null) {
+  const keyType = getKeyType(key);
+  if (keyType === 'gemini') return callGemini(sys, userContent, key, imageData);
+  if (keyType === 'anthropic') return callClaude(sys, userContent, key, imageData);
+  throw new Error('No valid API key. Enter a Google AI (AIza...) or Anthropic (sk-ant...) key.');
+}
+
+// ── UNIVERSAL AUTHENTICATION MEMORY BANK ─────────────────────────────────────
+// Sourced from: LegitCheck, WatchCertificate, Texas Watch Exchange, Maximillion Watches,
+// WatchPilot, Acviss, Gnomon Watches, WatchUSeek forums, Roroos Longines guide (2024–2026).
+// These tests apply to ALL watches regardless of brand. Used by all three pipeline agents
+// and the offline checklist engine.
+
+const UNIVERSAL_AUTH_TESTS = {
+
+  // ── PHYSICAL TESTS (can be done by hand) ──────────────────────────────────
+  physical: [
+    {
+      id: "weight",
+      name: "Weight Test",
+      method: "Hold watch in palm. Compare against known authentic weight for this model.",
+      pass: "Watch feels solid, substantial, and heavy for its size — consistent with high-grade steel, sapphire, and mechanical movement.",
+      fail: "Watch feels light, hollow, or 'tinny'. Counterfeit watches use cheaper alloys and plastic components that are measurably lighter.",
+      notes: "Not definitive alone — some modern titanium watches are genuinely light. Cross-reference with specification weight in grams."
+    },
+    {
+      id: "crown",
+      name: "Crown Feel Test",
+      method: "Pull crown to time-setting position. Rotate to advance time. Push and (if applicable) screw back down.",
+      pass: "Crown movement is smooth, precise, and positive. Screw-down crown engages cleanly with resistance. No wobble.",
+      fail: "Crown feels loose, wobbles laterally, skips, or screws down unevenly. Quartz step when turning on an alleged automatic.",
+      notes: "Luxury automatic crowns have distinct 'winding feel'. Many fakes use Chinese quartz movements — the crown has no resistance when 'winding'."
+    },
+    {
+      id: "second_hand",
+      name: "Seconds Hand Motion Test",
+      method: "Watch the second hand for 30 seconds.",
+      pass: "Smooth, continuous sweep (automatic/mechanical) — 6 to 8 beats per second. Some models tick: Rolex ticks 8x/sec, Omega 3x/sec.",
+      fail: "Single tick per second = quartz movement. On a claimed luxury automatic, this is an immediate red flag. Choppy or irregular sweep.",
+      notes: "Spring Drive (Grand Seiko) has a perfectly smooth sweep unlike any standard automatic. ETA automatics beat 6–8 times/sec."
+    },
+    {
+      id: "magnet",
+      name: "Magnet Test (Gold/Platinum claims)",
+      method: "Hold a strong magnet near the case, bracelet, and clasp.",
+      pass: "No magnetic attraction on stainless steel model (steel is slightly magnetic — weak attraction is fine). No attraction on claimed gold.",
+      fail: "Strong attraction on claimed gold case = base metal under plating. Strong attraction on bracelet where none expected.",
+      notes: "Standard 316L stainless steel has very slight magnetism. Titanium is not magnetic. Gold and platinum are not magnetic."
+    },
+    {
+      id: "water_resistance",
+      name: "Crown Seal Test",
+      method: "Attempt to screw down the crown (if screw-down type). Check for rubber seal resistance.",
+      pass: "Crown threads engage smoothly and lock with clear resistance. Gasket seal audibly/tactilely confirmed.",
+      fail: "Crown threads strip, feel loose, or show no gasket resistance. Missing crown seal = water ingress risk and likely fake.",
+      notes: "Fakes often omit or use inferior gaskets. A genuine 200m diver should require noticeable effort to screw down the crown."
+    },
+    {
+      id: "case_feel",
+      name: "Case Edge Sharpness Test",
+      method: "Run fingernail along transitions between brushed and polished surfaces on case and bracelet.",
+      pass: "Sharp, crisp transitions with no bleed-over. Each surface type is distinct and confined to its intended area.",
+      fail: "Polishing smears across brushed areas, rounded edges where sharp edges should be, or vice versa. Cheap casting visible.",
+      notes: "Genuine luxury watches use distinct finishing operations for each surface. Fakes polish everything together — sharp transitions disappear."
+    },
+    {
+      id: "bracelet_links",
+      name: "Bracelet Link Test",
+      method: "Flex bracelet and check spacing between links. Check for screws vs pins.",
+      pass: "Consistent gap between each link. Screws (not friction pins) where applicable. Endlinks fit flush to case with no gaps.",
+      fail: "Nearly zero gap between links (fake bracelets are too thick or links are too wide). Friction pins where screws should be. Gaps at case/bracelet join.",
+      notes: "Seiko, Rolex, Tudor all use screwed links on sports bracelets. A friction-pin oyster bracelet is immediately suspicious."
+    },
+    {
+      id: "clasp",
+      name: "Clasp Test",
+      method: "Open and close the clasp. Check for brand engravings inside.",
+      pass: "Clasp snaps with a positive, solid click. Interior engraved with brand name, reference, or logo. Micro-adjust functions correctly.",
+      fail: "Clasp clicks weakly, rattles, or feels loose. Interior is blank or has poorly engraved text. No micro-adjust on models that should have one.",
+      notes: "Genuine Rolex clasps: engraved with crown logo, reference number, and date code. Fake clasps are usually blank or laser-printed."
+    },
+    {
+      id: "sound",
+      name: "Sound Test",
+      method: "Bring watch to ear. Listen to rotor (if automatic). Shake gently.",
+      pass: "Rotor sweeps smoothly with a soft, quality sound. No rattling. Mechanical tick is regular and precise.",
+      fail: "Cheap rattling rotor sound. Loose components sound inside case. Irregular tick or grinding.",
+      notes: "A genuine ETA 2824 rotor sounds 'silky'. Chinese copy movements often use lighter rotors that produce a tinnier, louder sound."
+    }
+  ],
+
+  // ── VISUAL TESTS (unaided eye and magnification) ───────────────────────────
+  visual: [
+    {
+      id: "dial_print",
+      name: "Dial Text & Logo Quality",
+      method: "Under good lighting, examine all printed text with a loupe (10×).",
+      pass: "All text is sharp, uniform weight, and correctly spaced. Logo elements are correctly proportioned. No bleeding ink edges.",
+      fail: "Blurred text, uneven letter weight, incorrect font, misspellings, or incorrect proportions. Logo parts touching when they shouldn't.",
+      notes: "Most fakes fail here. Every brand uses proprietary typefaces. Rolex 'SUBMARINER' has specific letter thickness ratio. Tissot '1853' must appear at top of dial. Longines text must be on a perfectly straight horizontal baseline."
+    },
+    {
+      id: "dial_colour",
+      name: "Dial Colour Accuracy",
+      method: "Compare dial colour under neutral white light against authenticated reference photos.",
+      pass: "Colour matches authentic examples exactly — no green tint on blue dials, no brown on black dials, sunray finishing at correct angle.",
+      fail: "Wrong shade — Rolex Daytona 'Daytona' text must be dark red, not bright red. Tissot T-Sport PRC is deep navy, not turquoise. Breitling Endurance Pro has yellow accents.",
+      notes: "Counterfeiters often get general hues right but saturation, metallic finish, and exact shade wrong."
+    },
+    {
+      id: "lume",
+      name: "Lume Application & Glow Test",
+      method: "Charge watch under bright light for 30 seconds. View in darkness. Under daylight, examine with loupe.",
+      pass: "Lume applied evenly within markers with no overflow. Strong, even blue-green glow in darkness. Consistent colour across all markers.",
+      fail: "Patchy or overflowed lume under loupe. Dim, yellowish, or uneven glow in dark. Lume painted over the wrong colour.",
+      notes: "Modern Rolex uses Chromalight (blue glow). Most brands use Swiss Super-LumiNova. BGW9 lume on Tudor Black Bay is distinctly bright. Ball Watch uses tritium gas tubes — unmistakable even glow, no charging needed."
+    },
+    {
+      id: "crystal",
+      name: "Crystal & AR Coating Test",
+      method: "Tilt watch under a single light source at various angles. Look for AR coating colour.",
+      pass: "Sapphire crystal shows distinctive blue or blue-green anti-reflective tint when tilted. No visible scratches. Crystal edges are polished.",
+      fail: "No AR coating tint = mineral or acrylic glass. Scratches on alleged sapphire. Blurry reflections or optical distortion visible.",
+      notes: "Sapphire (hardness 9 Mohs) vs mineral glass (hardness 5–6 Mohs) — try to scratch an inconspicuous area with a fingernail (mineral scratches easily). Rolex sapphire has micro-etched crown at 6 o'clock visible only under magnification."
+    },
+    {
+      id: "caseback",
+      name: "Caseback Inspection",
+      method: "Examine caseback engravings and type under loupe.",
+      pass: "Correct back type for model. Reference and serial correctly placed and deeply engraved. Brand name in correct font.",
+      fail: "Exhibition back on a model that should be solid (major Rolex red flag). Over-decorated back. Shallow, pressed-in engravings. Wrong font.",
+      notes: "Most Rolex have plain casebacks. A caseback showing the movement or heavily engraved with logos is almost certainly fake. Longines uses two distinct engraving depths — deep for brand name, laser for serial."
+    },
+    {
+      id: "hands",
+      name: "Hand Shape & Finishing",
+      method: "Examine hands under 10× loupe from different angles.",
+      pass: "Hands taper to precise, sharp points. Axis is perfectly centred. Finishing (polished or brushed) is consistent and intentional. Length is correct relative to dial.",
+      fail: "Flat-topped hands where they should taper. Offset axis. Lume misapplied. Hands too long or too short relative to indices.",
+      notes: "Longines rounds the head of second hands and tapers to a perfect point — flat tops indicate fake. Seiko 5 hands should have no burrs on edges."
+    },
+    {
+      id: "cyclops",
+      name: "Date Magnification Test (Rolex & others)",
+      method: "Look directly at date window. Hold at arm's length, then close.",
+      pass: "Rolex: date fills entire cyclops window at 2.5× magnification — number is large and legible. Other brands: magnification consistent with spec.",
+      fail: "Date magnification below 2.5× on Rolex. Date numeral is small or unclear. Cyclops lens distorts rather than magnifies.",
+      notes: "This is one of the most reliable Rolex tests. 2.5× makes the date nearly fill the cyclops lens. Fakes typically achieve only 1.2–1.5× at best."
+    },
+    {
+      id: "bezel",
+      name: "Bezel Alignment & Click Test",
+      method: "Rotate bezel fully. Count clicks. Check alignment of markers.",
+      pass: "Rolex sport bezels: 120 precise, distinct clicks per revolution. Ceramic insert perfectly centred with correct marker alignment. Bidirectional bezels (GMT) click cleanly both ways.",
+      fail: "Fewer than 120 clicks, mushy/indistinct clicks, or bezel wobbles laterally. Ceramic insert misaligned. Longines HydroConquest: smooth bezel section should be at 12 and 6, not 9 and 3.",
+      notes: "Fake sport bezels often have 60-click mechanisms (cheaper). Tudor Black Bay bezels should have 120 clicks with a distinct mechanical feel."
+    },
+    {
+      id: "serial_format",
+      name: "Serial Number Format & Location",
+      method: "Locate serial number. Check format, depth, and location against brand specification.",
+      pass: "Serial is deeply engraved (not printed or stamped), correct location for brand/era, correct format (numeric vs alphanumeric), matches documentation.",
+      fail: "Serial is shallow, floating digits, wrong location, wrong format, or missing entirely. Serial on documentation does not match watch.",
+      notes: "Post-2005 Rolex: serial on rehaut at 6 o'clock, not between lugs. Pre-2005: between lugs (need to remove bracelet). Seiko: YYMMXXXX format on caseback. Counterfeiters often duplicate serials — cross-check with manufacturer databases."
+    },
+    {
+      id: "price_check",
+      name: "Market Price Sanity Test",
+      method: "Compare asking price to current grey market and retail prices for this exact reference.",
+      pass: "Price within 10–25% of grey market value. Slight discount plausible for private sale or imperfect condition.",
+      fail: "Price more than 25–30% below grey market value without clear explanation (damage, missing papers). 'Too good to be true' pricing is the #1 indicator of fraud.",
+      notes: "Even damaged genuine watches rarely go below 50% of grey market. Rolex discount >25% should trigger immediate scrutiny. Seiko SKX and 5 Sports fakes are sold at prices close to genuine — price check matters less here."
+    }
+  ],
+
+  // ── DOCUMENTATION TESTS ────────────────────────────────────────────────────
+  documentation: [
+    {
+      id: "warranty_card",
+      name: "Warranty Card Test",
+      method: "Examine warranty card font, colour, hologram sticker, and serial match.",
+      pass: "Correct font, correct layout for brand. Serial number on card matches serial on watch exactly. Hologram sticker correct colour and diffracts properly.",
+      fail: "Font wrong weight or spacing. Serial mismatch between card and watch. Hologram flat or wrong colour. Missing dealer stamp on applicable brands.",
+      notes: "Having papers is not proof of authenticity — fake papers are widely available. Both watch AND papers must be consistent with each other."
+    },
+    {
+      id: "box",
+      name: "Box & Packaging Test",
+      method: "Inspect box material, magnets, velvet quality, and all included items.",
+      pass: "Solid box with correct materials. Velvet or alcantara lining is clean and correctly coloured. All booklets present with correct print quality. Swing tag with correct barcode.",
+      fail: "Flimsy box, wrong colour lining, missing booklets, booklets with poor print quality or wrong languages. Swing tag barcode does not scan to correct reference.",
+      notes: "Rolex boxes have specific magnetic closures and satin-lined trays. Seiko boxes are model-specific — wrong box is a red flag."
+    }
+  ],
+
+  // ── COUNTERFEIT TYPES (for context in reports) ─────────────────────────────
+  counterfeit_types: {
+    "Replica": "Mass-produced obvious fake. Low quality, usually immediately identifiable. Sells for a few dollars.",
+    "Frankenwatch": "Assembled from mix of genuine and counterfeit parts. More deceptive. May pass some tests. Serial may be genuine but movement or dial replaced.",
+    "Superfake / Superclone": "High-quality counterfeit. Uses similar materials, CNC-machined cases, and sometimes genuine Swiss movements. Only 20% of counterfeits are obvious as of 2025. Professional inspection required.",
+    "Homage": "Legal copy that mimics design without using brand name. Not a counterfeit but may be misrepresented as genuine in secondary market."
+  },
+
+  // ── BRAND-SPECIFIC INTERNET-SOURCED CHECKS ─────────────────────────────────
+  brand_specific_internet: {
+    "Rolex": [
+      "Rehaut (inner bezel ring): post-2005 models have serial laser-engraved at 6 o'clock. Pre-2005: between lugs (requires bracelet removal).",
+      "Caseback: should be completely plain on almost all models. Exhibition back = fake. 'Rolex Genève' engraving on back = fake.",
+      "Cyclops lens: exactly 2.5× magnification. Date fills entire window. Fakes achieve 1.2–1.5× at best.",
+      "Bezel: 120 clicks per revolution, firm and precise. Ceramic on modern sport models — no fading, no printing (it's coloured ceramic all the way through).",
+      "Sweeping second hand: 8 beats per second. Not completely smooth — each beat is slightly visible but rapid.",
+      "Crown: screw-down crown must thread smoothly and lock. Rolex-signed crown with correct proportions.",
+      "Chromalight lume: blue glow (not green) lasting several hours. Even application in all markers.",
+      "Bracelet: Oyster links use screws. End links fit flush with no gap. Clasp interior: engraved crown logo + reference code."
+    ],
+    "Seiko": [
+      "Caseback shows 3 elements: serial number (YYMMXX format), movement calibre (e.g. NH35, 7S26, 4R36), and case/box number.",
+      "Grand Seiko: Zaratsu hand-polishing creates perfectly flat mirror surfaces. Any waviness, orange-peel, or distortion = fake.",
+      "Spring Drive: electrically regulated by electromagnetic brake. Second hand motion is absolutely perfect — no steps at all, even under magnification.",
+      "Seiko logo font: specific weight and proportion on dial, caseback, and clasp. All three should match exactly.",
+      "Seiko 5 bracelet: screws (not pins) in links. End piece stamped with Seiko branding.",
+      "Movement calibre number on caseback must match the physical movement if opened."
+    ],
+    "Tudor": [
+      "Tudor rose logo: specific petal count and curvature. Simplified or blocky rose = fake.",
+      "Black Bay bezel: BGW9 lume pip at 12 o'clock. Pip size is very specific — large and clearly bright. Check in dark.",
+      "Snowflake hands (Heritage models): distinctive fat square hour hand. Wrong proportions are immediately obvious.",
+      "In-house MT5 calibre: visible through exhibition back. Beautifully finished. ETA-clone in display back = fake.",
+      "Tudor shield logo on caseback: specific proportions, deeply engraved.",
+      "Fastrider clasp: should click positively. Loose = fake."
+    ],
+    "Longines": [
+      "Winged hourglass logo: wings have specific curvature — fakes simplify the curves.",
+      "Caseback: serial deeply engraved + laser engraved series code. Three distinct notches on brand engraving. Rotor engraved 'LONGINES' in crisp font.",
+      "Hands: second hand tapers to a perfect point. Sharp right-angle cut when viewed from side, not bevelled. Flat-top = fake.",
+      "HydroConquest bezel: smooth section at 12 and 6 o'clock. If at 9 and 3 = bezel replaced or fake.",
+      "Micro-engraved code below numeral '6' — visible only under magnification. Fakes omit or render poorly.",
+      "Winged hourglass crown logo: mirror-polished, no machining marks. Fake crowns have unpolished teeth and blurry logos.",
+      "LONGINES text on dial: letters aligned on perfectly straight horizontal baseline."
+    ],
+    "Tissot": [
+      "'T' engraved on crown winding handle. Must be a genuine engraving, not printed or applied. Missing or non-engraved T = fake.",
+      "Tissot '1853' founding year must appear at top of dial on appropriate models.",
+      "PRX integrated bracelet: endlinks fit perfectly flush to case. Any gap = fake. Bracelet taper is very specific.",
+      "Dial colours: deep navy blue on T-Sport PRC, not greenish turquoise. Accurate colour is model-specific.",
+      "Powermatic 80 rotor: visible through exhibition back, labelled with '80 HOURS' text on rotor."
+    ],
+    "Hamilton": [
+      "H logo: specific proportion where the crossbar placement is very exact. Off-centre crossbar = fake.",
+      "Khaki Field dial: very clean, military-inspired typography. Any blur or weight inconsistency = suspicious.",
+      "Khaki Field crown: oversized military-style crown is a distinctive feature — wrong size is obvious.",
+      "Exhibition back movement: clearly labelled H-10 or H-70 calibre. Generic ETA clone without Hamilton designation = suspicious.",
+      "Hamilton Automatic rotor engraving: 'HAMILTON AUTOMATIC' in specific font. Missing or wrong font = fake."
+    ],
+    "Omega": [
+      "Co-Axial escapement: visible in exhibition back models. Three-level escapement wheel is unique to Omega.",
+      "Speedmaster: hesalite crystal on moonwatch models — slight scratch susceptibility is genuine. Sapphire on professional models.",
+      "Seamaster 300M: unidirectional ceramic bezel with laser-engraved markings (not printed). BGW9 or orange lume pip.",
+      "METAS Master Chronometer certification: logo on dial is specific — 'MASTER CO‑AXIAL CHRONOMETER' text correct weight.",
+      "Omega logo: lower Ω symbol has specific proportions. Often wrong on fakes — horns too fat or thin."
+    ],
+    "Movado": [
+      "Museum dot: single dot at 12 o'clock must be perfectly centred. Applied element (raised or recessed), not printed.",
+      "Museum dial: should be perfectly flat, lacquered or brushed with no texture. Any texture or print = fake.",
+      "Crown: engraved with Movado logo. Missing logo or applied sticker = fake.",
+      "Caseback: 'MOVADO' in correct helvetica-style font, correct depth.",
+      "Case quality: sharp bevels and transitions. Movado uses very clean case shapes — any warping or rough finishing suspicious."
+    ],
+    "Casio G-Shock": [
+      "Module number: printed inside caseback on sticker. Must match the module number referenced on the dial or in the manual.",
+      "Resin case and strap: genuine G-Shock resin is dense and heavy for its size. Fakes use lighter, cheaper plastic.",
+      "Button feel: all buttons should click precisely and return cleanly. Spongy or uneven buttons = fake.",
+      "MR-G models: titanium case with Kiryū-uchi hammered surface texture. Surface should show precise, regular marks.",
+      "Display: LCD should be perfectly sharp and bright. Bleeding or dim display = fake.",
+      "Backlight: specific EL backlight colour (teal/blue-green) illuminates entire face evenly."
+    ],
+    "Citizen": [
+      "Eco-Drive: must have no battery access port on caseback (it charges from light). Battery compartment on alleged Eco-Drive = fake.",
+      "Eco-Drive small reserve indicator: some models show charge level. Check it responds to light exposure.",
+      "Promaster diver: ceramic or aluminium bezel must rotate with firm, precise clicks. Loose bezel = fake.",
+      "Dial: Citizen uses very specific typography. 'CITIZEN' text has consistent character height.",
+      "Movement: for non-Eco-Drive quartz models, check battery compartment is accessible as expected."
+    ],
+    "TAG Heuer": [
+      "Carrera chronograph: vertical clutch mechanism. When chronograph is running, seconds hand should engage smoothly with no jump.",
+      "Monaco square case: exactly 39×39mm. Any deviation in squareness visible in photos.",
+      "TAG Heuer logo proportions: 'TAG' is larger than 'HEUER' on modern models — incorrect sizing = fake.",
+      "Pusher size: Carrera chronograph pushers have specific diameter. Wrong size or shape obvious in photos.",
+      "Exhibition back: Calibre Heuer 01 has an open-worked rotor showing the movement. Clone movements lack the correct architecture."
+    ],
+    "Breitling": [
+      "Navitimer bezel: bidirectional rotating slide rule. All numbers must be perfectly legible. Bezel rotation must be smooth in both directions.",
+      "Tachymetre or slide rule scale: typography and scale calibration is very specific. Wrong font or miscalibrated scale = fake.",
+      "COSC chronometer: most genuine Breitlings are COSC certified. Accuracy of ±4 seconds/day verifiable over time.",
+      "Caseback engraving: COSC certification text and movement number should be present on appropriate models.",
+      "Crown size: Breitling crowns are large and signed. Undersized or unsigned crown suspicious."
+    ]
+  },
+
+  // ── SCORING WEIGHTS FOR OFFLINE AUDIT ─────────────────────────────────────
+  // Used by offline() to calculate confidence score
+  scoring: {
+    serial_present:         10,
+    serial_format_match:     8,
+    reference_present:       8,
+    reference_db_match:      6,
+    image_provided:          8,
+    price_reasonable:        5,
+    condition_stated:        3,
+    papers_full_set:         5,
+    description_detailed:    3,
+    no_suspicious_language: 10,
+    brand_in_database:       4,
+    price_above_floor:       5,
+    // Penalties
+    suspicious_language:   -35,
+    price_below_50pct_floor:-20,
+    serial_format_mismatch: -15,
+    no_serial:             -10,
+    no_image:               -8,
+    no_reference:           -8
+  }
+};
+
+// ── WATCH AUTHENTICATION DATABASE ────────────────────────────────────────────
+// Built from: Watch Authentication Checklist & Information Extractable From Watch Photos
+// Covers all 12 authentication categories from the PDF for 15 major brands.
+// Used by the cross-reference agent and offline fallback.
+
+const WATCH_AUTH_CHECKLIST = {
+  authentication_categories: [
+    {
+      id: 1, name: "Serial Number Verification",
+      checks: ["Engraving style (laser-etched vs acid-etched vs stamped)", "Location on case (between lugs, caseback, inner bezel)", "Serial format matches brand/year range", "Font weight and depth consistent with genuine examples", "No double-strike or floating digits"]
+    },
+    {
+      id: 2, name: "Reference / Model Number",
+      checks: ["Case shape matches reference", "Dial configuration matches reference (complications, subdials, indices)", "Bracelet and clasp correct for reference", "Movement calibre matches stated reference", "Year of manufacture consistent with reference range"]
+    },
+    {
+      id: 3, name: "Movement Inspection",
+      checks: ["Rotor style correct for calibre", "Finishing: perlage, Côtes de Genève, bevelling quality", "Jewel count and colour", "Manufacturer engravings on bridges and plates", "Balance wheel: shape, timing, spring quality", "No mismatched screws or visible glue"]
+    },
+    {
+      id: 4, name: "Case Back & Construction",
+      checks: ["Correct back type (screwback, snapback, exhibition)", "Engraving font, depth, and alignment", "Case material and finish matches spec", "Alignment of caseback to case", "Correct reference and serial placement", "Water resistance markings accuracy"]
+    },
+    {
+      id: 5, name: "Dial Details",
+      checks: ["Printing sharpness and crispness", "Logo font weight, spacing, and alignment", "Lume application: consistency, colour, no overflow", "Hand shape, finish, length relative to dial", "Subdial spacing and proportion", "Date window magnification and alignment", "Colour accuracy vs. reference photos"]
+    },
+    {
+      id: 6, name: "Crystal",
+      checks: ["Sapphire vs mineral glass (reflectivity test)", "AR coating colour (blue/green tint on genuine sapphire)", "Cyclops lens magnification (2.5× on genuine Rolex)", "Laser-etched brand trademark at 6 o'clock (Rolex)", "No micro-scratches from poor cutting"]
+    },
+    {
+      id: 7, name: "Bracelet / Strap",
+      checks: ["Link construction: oyster, jubilee, president, rubber, leather", "Screws vs friction pins in links", "Clasp type correct for model", "Clasp engravings and internal stamping", "Endlink fitment to case", "Weight and sound when flexed", "Brushed vs polished surfaces correct"]
+    },
+    {
+      id: 8, name: "Weight & Dimensions",
+      checks: ["Case diameter within ±0.5mm of spec", "Case thickness within tolerance", "Lug width correct", "Total weight consistent with materials", "Lug-to-lug distance matches reference"]
+    },
+    {
+      id: 9, name: "Packaging & Papers",
+      checks: ["Warranty card font, colour, hologram", "Serial on card matches watch", "Booklet print quality and binding", "Box quality, magnet, velvet", "Swing tag and plastic protectors", "Chronext/dealer stamp authenticity"]
+    },
+    {
+      id: 10, name: "Finishing Quality",
+      checks: ["Sharp, defined polished bevels on case", "Brushed surfaces: direction consistent, no polish bleeding", "Clean, deep engravings (no filled-in characters)", "Transitions between polished and brushed surfaces crisp", "No uneven gaps between case and bracelet"]
+    },
+    {
+      id: 11, name: "Functionality",
+      checks: ["Date change at correct time (midnight)", "GMT hand independent of hour hand", "Chronograph reset to zero cleanly", "Power reserve accurate to spec", "Crown positions: correct feel and function", "Screw-down crown engagement"]
+    },
+    {
+      id: 12, name: "Provenance / Sales History",
+      checks: ["Service papers from authorised dealer", "Purchase receipts with serial", "Auction house certification", "Dealer history matches watch age", "No stolen watch registry matches"]
+    }
+  ],
+
+  photo_extractable: {
+    visual_identification: ["Brand and model", "Case shape and bezel type", "Dial layout and complications"],
+    dial_and_hands: ["Logo correctness", "Font accuracy", "Date window shape and alignment", "Subdial placement and proportion", "Lume colour and texture", "Hand length and style"],
+    case_and_bezel: ["Case material estimate (steel/titanium/gold)", "Engraving depth and accuracy", "Bezel alignment and font", "Crown guards and crown logo"],
+    bracelet_strap: ["Link type (oyster/jubilee/rubber/leather)", "Correct clasp type for model", "Endlink fitment and stamping"],
+    caseback: ["Exhibition vs solid", "Engraving accuracy", "Rotor design if visible", "Movement finishing if visible"],
+    proportions: ["Approximate diameter and thickness", "Lug-to-lug distance", "Proportion mismatches indicating replicas"],
+    red_flags: ["Misaligned elements", "Poor printing quality", "Incorrect colours", "Overly glossy or matte surfaces", "Incorrect screw types"],
+    condition: ["Scratches and dents", "Polishing signs (loss of case sharpness)", "Bracelet stretch", "Crystal damage"],
+    metadata: ["Lighting reflections showing polishing patterns", "Hallmarks or hidden engravings", "Serial/location indicators if visible"]
+  },
+
+  // Per-brand database — authentic specs and fake indicators
+  brands: {
+    "Rolex": {
+      founded: 1905,
+      serial: { format: /^\d{5,8}$/, note: "All-numeric, 5–8 digits. Post-2010 models use random serials." },
+      crystal: "Sapphire with blue AR coating. Laser-etched Rolex crown at 6 o'clock (invisible to naked eye). 2.5× Cyclops magnification.",
+      movement_notes: "In-house calibres only. Nicely finished but not exhibition-quality. Parachrom hairspring (blue). Rotor has 'Rolex' engraving.",
+      known_fakes: ["Mineral glass crystal (no AR coating blue tint)", "Cyclops magnification below 2.5×", "Missing laser crown at 6 o'clock", "Lightweight feel", "No screw-down crown engagement", "Cheap clasp with no micro-adjust", "Incorrect font on dial — Rolex uses proprietary typeface", "Hologram dot missing on newer models"],
+      references: {
+        "Submariner": { refs: ["126610LN","126610LV","114060"], case: "40/41mm", bezel: "Ceramic unidirectional", lug_width: "20mm" },
+        "Daytona": { refs: ["116500LN","126500LN"], case: "40mm", bezel: "Ceramic tachymetre", lug_width: "20mm" },
+        "GMT-Master II": { refs: ["126710BLNR","126710BLRO","126711CHNR"], case: "40mm", bezel: "Ceramic bidirectional", lug_width: "20mm" },
+        "Datejust": { refs: ["126234","126300","278274"], case: "36/41mm", bezel: "Fluted or smooth", lug_width: "20mm" },
+        "Day-Date": { refs: ["228235","228238","228349"], case: "36/40mm", bezel: "Fluted or diamond", lug_width: "20mm" }
+      },
+      price_floor: 5000
+    },
+
+    "Patek Philippe": {
+      founded: 1839,
+      serial: { format: /^\d{6,8}$/, note: "6–8 numeric digits, sequential (not random)." },
+      crystal: "Sapphire, no Cyclops. Exhibition caseback on most pieces. Signed crown.",
+      movement_notes: "Hand-decorated in-house movements. Gyromax balance wheel. Geneva Seal / Patek Philippe Seal. Bevelled and polished chatons.",
+      known_fakes: ["Quartz movement in automatic models", "Missing Gyromax balance wheel", "Poor perlage under magnification", "Incorrect Calatrava cross logo", "Font spacing errors on dial", "Plastic exhibition back"],
+      references: {
+        "Nautilus": { refs: ["5711/1A","5726A","5726/1A"], case: "40mm", bezel: "Horizontal grooves", lug_width: "21mm" },
+        "Aquanaut": { refs: ["5167A","5168G"], case: "40mm", bezel: "Octagonal with rubber", lug_width: "21mm" },
+        "Calatrava": { refs: ["5196G","5227G","6000G"], case: "38/39mm", bezel: "Smooth round", lug_width: "19mm" }
+      },
+      price_floor: 15000
+    },
+
+    "Audemars Piguet": {
+      founded: 1875,
+      serial: { format: /^\d{6,7}[A-Z]?$/, note: "6–7 digits, sometimes letter suffix." },
+      crystal: "Sapphire front and back. AR coating on exhibition back.",
+      movement_notes: "In-house calibres. Royal Oak uses Cal. 3120/3126/4302. Fine perlage and Côtes de Genève. Open-worked rotors on higher models.",
+      known_fakes: ["Incorrect Royal Oak octagonal bezel screw count (should be 8)", "Wrong bezel screw size or shape", "Integrated bracelet does not flow smoothly to case", "AP logo incorrect", "Case finishing — brushed and polished transitions not crisp", "Missing integrated bracelet micro-adjustment"],
+      references: {
+        "Royal Oak": { refs: ["15500ST","15202ST","26240ST"], case: "41mm/37mm", bezel: "Octagonal 8-screw", lug_width: "21mm" },
+        "Royal Oak Offshore": { refs: ["26420TI","26480TI"], case: "42–44mm", bezel: "Octagonal oversized", lug_width: "28mm" }
+      },
+      price_floor: 15000
+    },
+
+    "Omega": {
+      founded: 1848,
+      serial: { format: /^\d{7,9}$/, note: "7–9 numeric digits. Located on caseback since ~2010." },
+      crystal: "Sapphire with internal AR coating on modern pieces. Hesalite on vintage Speedmaster.",
+      movement_notes: "Co-Axial escapement on modern models. Master Chronometer certified (METAS). Laser-engraved serial on movement.",
+      known_fakes: ["No Co-Axial escapement visible through display back", "Incorrect laser engraving on movement", "Speedmaster without correct hesalite crystal", "Tachymetre scale font incorrect", "Broad arrow hand not matching reference year"],
+      references: {
+        "Speedmaster": { refs: ["310.30.42.50.01.001","311.30.42.30.01.005"], case: "42mm", bezel: "Tachymetre aluminium/steel", lug_width: "20mm" },
+        "Seamaster 300M": { refs: ["210.30.42.20.01.001","210.22.42.20.01.002"], case: "42mm", bezel: "Ceramic unidirectional", lug_width: "21mm" },
+        "Constellation": { refs: ["131.10.28.60.52.001","131.20.39.20.02.001"], case: "28–39mm", bezel: "Smooth or diamond", lug_width: "19mm" }
+      },
+      price_floor: 2500
+    },
+
+    "IWC": {
+      founded: 1868,
+      serial: { format: /^\d{7,8}$/, note: "7–8 digits." },
+      crystal: "Sapphire, double-AR coated.",
+      movement_notes: "In-house and ETA-based. Pellaton winding system on Ingenieur. IWC engraving on rotor.",
+      known_fakes: ["IWC logo font too thin", "Incorrect porthole case shape on Big Pilot", "Missing pellaton winding mechanism", "Wrong crown size for model"],
+      references: {
+        "Pilot's Big Pilot": { refs: ["IW501001","IW500912"], case: "46mm", bezel: "Fixed smooth", lug_width: "21mm" },
+        "Portugieser": { refs: ["IW500705","IW371605"], case: "42.3mm", bezel: "Fixed smooth", lug_width: "21mm" }
+      },
+      price_floor: 3500
+    },
+
+    "Cartier": {
+      founded: 1847,
+      serial: { format: /^[0-9]{6,8}$/, note: "Numeric, engraved on lug or caseback." },
+      crystal: "Sapphire. Cabochon crown with blue sapphire.",
+      movement_notes: "In-house and ETA-based. Tank uses quartz or manual wind. Santos uses in-house or Jaeger movements.",
+      known_fakes: ["Cabochon crown missing or not blue sapphire", "Roman numeral font incorrect — Cartier uses proprietary typeface", "Sword hands not properly finished", "Missing sword-shaped Cartier signature at 12 o'clock", "Secret signature inside Roman XII or dial"],
+      references: {
+        "Santos": { refs: ["WSSA0018","WSSA0009"], case: "39.8/35mm", bezel: "Square with exposed screws", lug_width: "20mm" },
+        "Tank Must": { refs: ["WSTA0057","WSTA0041"], case: "33.7×25.5mm", bezel: "Rectangular smooth", lug_width: "19mm" },
+        "Ballon Bleu": { refs: ["W69012Z4","WSBB0025"], case: "36/42mm", bezel: "Round with fluted crown guard", lug_width: "17mm" }
+      },
+      price_floor: 3000
+    },
+
+    "Breitling": {
+      founded: 1884,
+      serial: { format: /^[A-Z0-9]{6,8}$/, note: "Alphanumeric." },
+      crystal: "Sapphire with AR coating.",
+      movement_notes: "COSC-certified chronometer. Manufacturer or ETA-based. Breitling rotor engraving.",
+      known_fakes: ["Incorrect pusher shape on chronograph", "Tachymetre or slide rule scale font wrong", "Missing COSC certification engraving on caseback", "Navitimer bezel scale not rotating correctly"],
+      references: {
+        "Navitimer": { refs: ["AB0139","AB0127"], case: "41/43mm", bezel: "Bidirectional slide rule", lug_width: "22mm" },
+        "Superocean": { refs: ["A17367","A17375"], case: "42/44mm", bezel: "Ceramic unidirectional", lug_width: "22mm" }
+      },
+      price_floor: 3000
+    },
+
+    "TAG Heuer": {
+      founded: 1860,
+      serial: { format: /^[A-Z0-9]{6,8}$/, note: "Alphanumeric on caseback." },
+      crystal: "Sapphire.",
+      movement_notes: "Calibre Heuer-01/02 in-house or ETA. Carrera uses in-house vertical clutch chronograph.",
+      known_fakes: ["TAG logo font incorrect", "Incorrect pusher size on Carrera", "No proper vertical clutch action", "Cheap bracelet clasp finish"],
+      references: {
+        "Carrera": { refs: ["CBN2A1A","CBK2111"], case: "44mm", bezel: "Fixed tachymetre", lug_width: "22mm" },
+        "Monaco": { refs: ["CAW2111","CAW2114"], case: "39mm square", bezel: "Square fixed", lug_width: "20mm" }
+      },
+      price_floor: 1500
+    },
+
+    "Jaeger-LeCoultre": {
+      founded: 1833,
+      serial: { format: /^\d{7,8}$/, note: "7–8 numeric digits on movement and caseback." },
+      crystal: "Sapphire. Many models have exhibition casebacks.",
+      movement_notes: "Entirely in-house. Master Control uses Cal. 899/1. Reverso uses manual-wind calibres. Extremely high finishing.",
+      known_fakes: ["JLC logo engraving font incorrect", "Reverso case does not flip smoothly", "Movement finishing rough under magnification", "Missing JLC signature on movement"],
+      references: {
+        "Reverso Classic": { refs: ["Q3858522","Q385842J"], case: "45.6×27.4mm", bezel: "Rectangular flip case", lug_width: "21mm" },
+        "Master Ultra Thin": { refs: ["Q1352420","Q1342420"], case: "39/40mm", bezel: "Smooth round", lug_width: "20mm" }
+      },
+      price_floor: 4000
+    },
+
+    "A. Lange & Söhne": {
+      founded: 1845,
+      serial: { format: /^\d{6}$/, note: "6 numeric digits on movement." },
+      crystal: "Sapphire, display back on all models.",
+      movement_notes: "All hand-finished in-house. Outsize date complication. Three-quarter plate German silver. Blued screws. No Lange without display back.",
+      known_fakes: ["Missing German silver three-quarter plate", "Outsize date complication not functioning correctly", "No blued screws", "Movement not hand-finished", "Missing German hallmarks"],
+      references: {
+        "Lange 1": { refs: ["101.039","191.039"], case: "38.5mm", bezel: "Smooth asymmetric", lug_width: "21mm" },
+        "Saxonia": { refs: ["219.032","219.033"], case: "37mm", bezel: "Smooth round", lug_width: "20mm" }
+      },
+      price_floor: 20000
+    },
+
+    "Vacheron Constantin": {
+      founded: 1755,
+      serial: { format: /^\d{6,7}$/, note: "6–7 numeric digits." },
+      crystal: "Sapphire. Geneva Hallmark (Poinçon de Genève) on all movements.",
+      movement_notes: "Geneva Seal — most rigorous finishing standard. Hand-bevelled and polished all components. Exclusive VC in-house calibres.",
+      known_fakes: ["Missing Maltese cross VC logo", "No Geneva Hallmark on movement", "Poor anglage (bevelling) quality", "Overseas integrated bracelet not flowing correctly"],
+      references: {
+        "Overseas": { refs: ["4500V","4500V/110A"], case: "41mm", bezel: "Maltese cross bezel", lug_width: "21mm" },
+        "Patrimony": { refs: ["85180/000R","87172/000G"], case: "40mm", bezel: "Ultra-thin smooth", lug_width: "21mm" }
+      },
+      price_floor: 15000
+    },
+
+    "Hublot": {
+      founded: 1980,
+      serial: { format: /^\d{7,8}$/, note: "7–8 numeric digits on caseback." },
+      crystal: "Sapphire, scratch-resistant.",
+      movement_notes: "UNICO in-house movement or base Sellita. Ceramic and rubber-based materials.",
+      known_fakes: ["H-shaped screws on bezel incorrect size or soft metal", "Rubber strap not Hublot-branded", "Missing UNICO engraving on visible movement", "Big Bang bezel screws not uniform"],
+      references: {
+        "Big Bang": { refs: ["441.CI.1171.RX","411.OX.1180.RX"], case: "44mm", bezel: "Ceramic with H-screws", lug_width: "27mm" },
+        "Classic Fusion": { refs: ["542.NX.1170.NX","565.NX.1170.NX"], case: "42/45mm", bezel: "Smooth ceramic or titanium", lug_width: "26mm" }
+      },
+      price_floor: 5000
+    },
+
+    "Panerai": {
+      founded: 1860,
+      serial: { format: /^[A-Z]{1,2}\d{6}$/, note: "Letter prefix + 6 digits e.g. OP7234567." },
+      crystal: "Sapphire.",
+      movement_notes: "OP (ETA-based) or P-series in-house. Cushion-shaped case. Left-side crown.",
+      known_fakes: ["Crown on right side", "Missing crown-lock mechanism", "OP movement finishing wrong", "Incorrect font on sandwich dial", "Luminor bridge not correct shape"],
+      references: {
+        "Luminor Base": { refs: ["PAM00000","PAM01086"], case: "44mm cushion", bezel: "Fixed smooth", lug_width: "24mm" },
+        "Radiomir": { refs: ["PAM00210","PAM00497"], case: "45mm cushion wire lug", bezel: "Fixed smooth", lug_width: "24mm" }
+      },
+      price_floor: 3500
+    },
+
+    "Richard Mille": {
+      founded: 2001,
+      serial: { format: /^[A-Z]{2}\d{6}$/, note: "Two letters + 6 digits e.g. RM027001234." },
+      crystal: "Sapphire, curved/flat depending on model.",
+      movement_notes: "Skeletonised tourbillon or non-tourbillon. Titanium or carbon spyder frame. Every component hand-finished and visible.",
+      known_fakes: ["Skeleton dial not properly cut — rough edges", "Wrong font on case references", "Incorrect material — genuine RM uses aerospace-grade titanium/carbon", "Missing individual component serial numbers", "Titanium screws replaced with steel"],
+      references: {
+        "RM 011": { refs: ["RM011-03 Ti","RM011 NTPT"], case: "50×40mm tonneau", bezel: "Skeletonised", lug_width: "N/A integrated" },
+        "RM 035": { refs: ["RM035-02 NTPT"], case: "49.9×44.5mm", bezel: "Carbon/NTPT", lug_width: "N/A integrated" }
+      },
+      price_floor: 50000
+    },
+
+    "Breguet": {
+      founded: 1775,
+      serial: { format: /^\d{5,6}$/, note: "5–6 digit number also engraved on dial." },
+      crystal: "Sapphire. Exhibition caseback standard.",
+      movement_notes: "Tourbillon or lever escapement. Breguet overcoil (hairspring). Guilloche dials hand-engraved. Coin-edge case.",
+      known_fakes: ["Guilloche pattern not sharp under magnification", "Missing Breguet secret signature under dial", "Overcoil hairspring missing or incorrect", "Numerals font not Breguet proprietary"],
+      references: {
+        "Classique": { refs: ["5157BR","5177BR"], case: "38/39mm", bezel: "Coin-edge round", lug_width: "19mm" },
+        "Marine": { refs: ["5517BB","8827BB"], case: "43.9mm", bezel: "Fixed smooth", lug_width: "22mm" }
+      },
+      price_floor: 10000
+    },
+
+    // ── MID-MARKET & ACCESSIBLE LUXURY ($150 – $5,000) ──────────────────────
+
+    "Seiko": {
+      founded: 1881,
+      serial: { format: /^[0-9A-Z]{6,8}$/, note: "6–8 alphanumeric. Format: YYMMXXXX. Location: caseback." },
+      crystal: "Hardlex mineral glass on most models. Sapphire on Presage, Prospex high-end, and Grand Seiko.",
+      movement_notes: "In-house NH35/NH36 (auto), 7S26, 6R15/6R35, Spring Drive (Grand Seiko). Spring Drive unique — electromagnetically regulated, sweep seconds, no ticking. Grand Seiko uses Zaratsu polishing — mirror surfaces are perfectly flat with no distortion.",
+      known_fakes: ["Spring Drive movement replaced with cheap Chinese automatic", "Grand Seiko Zaratsu polishing shows waviness or orange-peel texture", "Seiko logo font weight slightly off — serifs incorrect", "Dial printing bleeds on counterfeit Presage models", "Crown signed 'SEIKO' should match dial logo exactly", "Incorrect case finishing — Seiko uses mix of brushed and polished with sharp transitions"],
+      references: {
+        "Seiko 5 Sports": { refs: ["SRPD51","SRPD63","SRPD27"], case: "42.5mm", bezel: "Fixed smooth or coin-edge", lug_width: "22mm" },
+        "Prospex Diver (SKX successor)": { refs: ["SPB143","SPB187","SRPD93"], case: "42mm", bezel: "Unidirectional 60-min", lug_width: "22mm" },
+        "Presage Cocktail Time": { refs: ["SRPB41","SRPG15","SSA346"], case: "40.5mm", bezel: "Smooth polished", lug_width: "21mm" },
+        "Grand Seiko Spring Drive": { refs: ["SBGA211","SBGA413","SBGE257"], case: "41mm", bezel: "Smooth", lug_width: "20mm" }
+      },
+      price_floor: 150
+    },
+
+    "Citizen": {
+      founded: 1918,
+      serial: { format: /^[A-Z0-9]{8,10}$/, note: "8–10 alphanumeric on caseback." },
+      crystal: "Mineral glass standard; sapphire on Promaster and Attesa higher models.",
+      movement_notes: "Eco-Drive: light-powered (no battery changes). Movements: E168, B612 (GPS), CB0020 (GPS/radio). Miyota-based on some models. Characteristic of genuine Eco-Drive: small light-reception window on dial.",
+      known_fakes: ["Eco-Drive logo font incorrect", "Battery compartment present on alleged Eco-Drive model", "Dial texture flat instead of textured/sunray", "Lume inconsistent or missing on Promaster Diver indices"],
+      references: {
+        "Promaster Marine Diver": { refs: ["BN0150-28E","BN0191-55L"], case: "43mm", bezel: "Unidirectional 60-min", lug_width: "20mm" },
+        "Eco-Drive Axiom": { refs: ["AW1670-82E","AT2480-07E"], case: "42mm", bezel: "Fixed smooth", lug_width: "21mm" },
+        "Attesa": { refs: ["CB0020-57A","AT8180-61A"], case: "42mm", bezel: "Fixed brushed", lug_width: "21mm" }
+      },
+      price_floor: 150
+    },
+
+    "Tissot": {
+      founded: 1853,
+      serial: { format: /^[A-Z0-9]{8,12}$/, note: "8–12 alphanumeric, printed inside caseback." },
+      crystal: "Sapphire on most current models (PR 516, PRX, Le Locle). Scratch-resistant mineral on entry-level.",
+      movement_notes: "ETA-based movements (Swatch Group). T-Touch uses solar-powered tactile crystal movement unique to Tissot. Powermatic 80 (ETA A05.H21) — 80-hour power reserve.",
+      known_fakes: ["T-Touch tactile bezel does not respond to touch", "PRX integrated bracelet has gaps at lugs — genuine fits flush", "Le Locle dial printing smudged or uneven", "Tissot logo helvetica-style T has specific proportions often wrong on fakes"],
+      references: {
+        "PRX Powermatic 80": { refs: ["T137.407.11.051.00","T137.407.16.091.00"], case: "40mm", bezel: "Integrated smooth", lug_width: "Integrated" },
+        "Le Locle Automatic": { refs: ["T006.407.16.053.00","T006.407.11.033.00"], case: "39.3mm", bezel: "Smooth polished", lug_width: "19mm" },
+        "Seastar 1000": { refs: ["T120.407.11.051.00","T120.407.17.051.00"], case: "43mm", bezel: "Unidirectional ceramic", lug_width: "21mm" }
+      },
+      price_floor: 250
+    },
+
+    "Longines": {
+      founded: 1832,
+      serial: { format: /^\d{8,9}$/, note: "8–9 numeric digits on movement and caseback." },
+      crystal: "Sapphire with AR coating on all current models.",
+      movement_notes: "ETA-based (Swatch Group). L-series calibres. L888 (ETA A31.L01) — 64-hour power reserve used in Master Collection. COSC certification available on some models.",
+      known_fakes: ["Winged hourglass logo — wings have specific curvature often incorrect on fakes", "Master Collection hands have distinctive sword shape — check proportions", "Heritage 1832 dial printing too thick or fonts wrong", "Bracelet screws replaced with friction pins"],
+      references: {
+        "HydroConquest": { refs: ["L3.781.4.56.6","L3.782.4.06.6"], case: "41mm", bezel: "Ceramic unidirectional", lug_width: "21mm" },
+        "Master Collection Automatic": { refs: ["L2.793.4.97.6","L2.628.4.78.3"], case: "40mm", bezel: "Smooth polished", lug_width: "20mm" },
+        "Spirit Zulu Time": { refs: ["L3.812.4.53.2","L3.802.4.63.2"], case: "42mm", bezel: "Fixed smooth", lug_width: "22mm" }
+      },
+      price_floor: 500
+    },
+
+    "Hamilton": {
+      founded: 1892,
+      serial: { format: /^[A-Z0-9]{8,10}$/, note: "8–10 alphanumeric on caseback, Swatch Group format." },
+      crystal: "Sapphire on most models. Mineral glass on entry-level Jazzmaster.",
+      movement_notes: "ETA and Swatch Group H-series calibres. H-10 gives 80-hour power reserve. Khaki Field uses H-70 (ETA 2824-based). Famous for film use (Interstellar, 2001: A Space Odyssey props).",
+      known_fakes: ["H logo has specific proportion — the crossbar placement is often wrong on fakes", "Khaki Field dial text and indices not crisp", "Automatic rotor engraving 'HAMILTON AUTOMATIC' missing or font incorrect", "Broadway crown incorrect size"],
+      references: {
+        "Khaki Field Auto": { refs: ["H70455133","H70555133"], case: "42mm", bezel: "Fixed smooth", lug_width: "22mm" },
+        "Jazzmaster Open Heart": { refs: ["H32565135","H32705131"], case: "40mm", bezel: "Smooth polished", lug_width: "20mm" },
+        "Khaki Navy Pioneer": { refs: ["H78415130","H78415135"], case: "43mm", bezel: "Fixed smooth", lug_width: "20mm" }
+      },
+      price_floor: 350
+    },
+
+    "Tudor": {
+      founded: 1926,
+      serial: { format: /^\d{5,8}$/, note: "All-numeric, shares format with Rolex parent. Caseback and between-lug location." },
+      crystal: "Sapphire on all current references.",
+      movement_notes: "In-house MT5XXX calibres from 2015 onwards. Earlier models use ETA. MT5612 (Black Bay GMT), MT5400 (Pelagos FXD). COSC certified. Tudor shield logo on rotor.",
+      known_fakes: ["Tudor rose logo on dial has specific petal count and shape — often simplified on fakes", "Black Bay bezel insert has BGW9 lume pip at 12 — pip size and brightness often wrong", "In-house calibre replaced with Chinese ETA clone", "Snowflake hands (Heritage Black Bay) have incorrect sword proportions on fakes", "Fastrider clasp mechanism does not click properly"],
+      references: {
+        "Black Bay 58": { refs: ["M79030N","M79030B"], case: "39mm", bezel: "Unidirectional 60-min aluminium", lug_width: "20mm" },
+        "Black Bay GMT": { refs: ["M79830RB","M79220N"], case: "41mm", bezel: "Bidirectional 24-hr ceramic", lug_width: "20mm" },
+        "Pelagos": { refs: ["M25610TNL","M25600TN"], case: "42mm", bezel: "Unidirectional titanium", lug_width: "21mm" },
+        "Black Bay 36": { refs: ["M79500","M79640"], case: "36mm", bezel: "Unidirectional aluminium", lug_width: "19mm" }
+      },
+      price_floor: 1500
+    },
+
+    "Movado": {
+      founded: 1881,
+      serial: { format: /^\d{6,8}$/, note: "6–8 numeric on caseback." },
+      crystal: "Sapphire crystal on Museum and higher lines. Anti-reflective coating on some.",
+      movement_notes: "Swiss ETA Ronda quartz or ETA automatic. Museum Watch uses quartz (ETA 901.001). Distinctive single dot at 12 o'clock — Movado's defining design element since 1947.",
+      known_fakes: ["Museum Watch dot at 12 is wrong size or printed rather than applied", "Case back lacks 'MOVADO' engraving in correct font", "Museum dial should be perfectly flat and lacquered — fakes show texture", "Crown lacks Movado logo engraving", "Bracelet end links have visible seam gaps"],
+      references: {
+        "Museum Classic": { refs: ["0607184","0606184","2100002"], case: "38/40mm", bezel: "Smooth black PVD or steel", lug_width: "18mm" },
+        "Bold Fusion": { refs: ["3600734","3600735"], case: "44mm", bezel: "Fixed ceramic", lug_width: "23mm" },
+        "SE Pilot": { refs: ["0607166","0606904"], case: "40mm", bezel: "Fixed smooth", lug_width: "20mm" }
+      },
+      price_floor: 200
+    },
+
+    "Bulova": {
+      founded: 1875,
+      serial: { format: /^[A-Z]\d{6}$/, note: "One letter + 6 digits on caseback, e.g. C123456." },
+      crystal: "Mineral glass standard; sapphire on Precisionist and higher lines.",
+      movement_notes: "Accutron II tuning fork (262,144 Hz vibration — sweeping seconds with no tick). Precisionist uses in-house 262 kHz oscillator. Marine Star uses automatic ETA-based movement.",
+      known_fakes: ["Accutron sweeping motion replaced with standard quartz step", "Precisionist 'Accutron' text missing from dial", "Skeleton dial cut quality rough on fake Accutron Spaceview", "Bulova logo '•BULOVA•' font proportions often incorrect"],
+      references: {
+        "Precisionist": { refs: ["98B315","96B175","98B316"], case: "42mm", bezel: "Fixed tachymetre or smooth", lug_width: "22mm" },
+        "Marine Star": { refs: ["98B301","97B110","98B302"], case: "43mm", bezel: "Unidirectional 60-min", lug_width: "22mm" },
+        "Curv Chronograph": { refs: ["98A161","96A158"], case: "44mm curved", bezel: "Fixed tachymetre", lug_width: "22mm" }
+      },
+      price_floor: 150
+    },
+
+    "Casio G-Shock": {
+      founded: 1983,
+      serial: { format: /^[A-Z0-9]{7,10}$/, note: "Module number inside caseback + serial on sticker." },
+      crystal: "Mineral glass standard; sapphire on higher models (MRG, MTG series).",
+      movement_notes: "Casio in-house quartz modules. Tough Solar + Multi-Band 6 radio sync on higher models. MR-G series uses titanium case with Japanese hand-finishing (Kiryū-uchi surface treatment). G-SHOCK module number is the key identifier.",
+      known_fakes: ["Counterfeit G-Shocks light — genuine resin is dense and heavy", "Buttons do not click crisply or have uneven travel", "Module number on caseback does not match model number on dial", "MR-G titanium case shows tool marks — genuine has perfect surface", "Resin strap joins case unevenly on fakes"],
+      references: {
+        "DW-5600": { refs: ["DW-5600E-1V","DW-5600BB-1"], case: "48.9×42.8mm square", bezel: "Fixed resin", lug_width: "Integrated" },
+        "GA-2100 CasiOak": { refs: ["GA-2100-1A1","GA-2100-8A"], case: "45mm octagonal", bezel: "Fixed resin", lug_width: "Integrated" },
+        "MTG-B3000": { refs: ["MTG-B3000D-1A","MTG-B3000D-1A2"], case: "51.9mm", bezel: "Carbon/metal composite", lug_width: "Integrated" },
+        "MR-G": { refs: ["MRG-B2000B","MRG-B1000BA"], case: "49.3mm titanium", bezel: "Fixed titanium", lug_width: "Integrated" }
+      },
+      price_floor: 150
+    },
+
+    "Rado": {
+      founded: 1917,
+      serial: { format: /^\d{9,10}$/, note: "9–10 numeric on caseback." },
+      crystal: "Sapphire or hardened ceramic. Known for scratch-resistant high-tech ceramic cases (HTC).",
+      movement_notes: "ETA-based (Swatch Group). HyperChrome uses ETA 2824. Captain Cook uses Cal. R746 (ETA 2824-2). Rado's selling point is ultra-hard ceramic — Vickers hardness 1250 HV vs steel at 200 HV.",
+      known_fakes: ["Ceramic case shows scratches — genuine Rado HTC ceramic is nearly unscratchable", "Captain Cook bezel click is loose or has no distinct positions", "Rado logo 'R' has specific arch geometry often wrong on fakes", "Bracelet ceramic links chip — genuine is extremely hard"],
+      references: {
+        "Captain Cook Auto": { refs: ["R32129153","R32105158"], case: "42mm", bezel: "Unidirectional ceramic", lug_width: "20mm" },
+        "HyperChrome": { refs: ["R32257102","R32252102"], case: "41mm ceramic", bezel: "Fixed ceramic", lug_width: "22mm" },
+        "True Thinline": { refs: ["R27955902","R27952702"], case: "40mm ultra-thin ceramic", bezel: "None — bracelet-integrated", lug_width: "Integrated" }
+      },
+      price_floor: 500
+    },
+
+    "Mido": {
+      founded: 1918,
+      serial: { format: /^\d{9,10}$/, note: "9–10 numeric, Swatch Group format." },
+      crystal: "Sapphire with anti-reflective coating on all current models.",
+      movement_notes: "ETA-based Swatch Group calibres. Calibre 80 (ETA C07.621) provides 80-hour power reserve. Multifort uses Calibre 80 with anti-magnetic silicone hairspring.",
+      known_fakes: ["Baroncelli dial printing not crisp — font weights slightly off", "Commander crown winding feel is notchy on fakes vs. smooth on genuine", "Ocean Star ceramic bezel insert misaligned"],
+      references: {
+        "Ocean Star 200": { refs: ["M026.430.11.041.00","M026.430.17.051.00"], case: "42mm", bezel: "Unidirectional ceramic", lug_width: "20mm" },
+        "Multifort Chronograph": { refs: ["M005.614.11.051.00","M025.627.11.061.00"], case: "44mm", bezel: "Fixed tachymetre", lug_width: "22mm" },
+        "Baroncelli": { refs: ["M7600.4.26.1","M022.408.11.031.00"], case: "38/40mm", bezel: "Smooth polished", lug_width: "19mm" }
+      },
+      price_floor: 350
+    },
+
+    "Certina": {
+      founded: 1888,
+      serial: { format: /^[A-Z0-9]{8,10}$/, note: "8–10 alphanumeric, Swatch Group format." },
+      crystal: "Sapphire with anti-reflective coating on DS Action and DS-1.",
+      movement_notes: "ETA 2892-A2 in Powermatic 80. Certina DS (Double Security) concept: double-sealed crown. Precidrive: quartz ±0.07 sec/day.",
+      known_fakes: ["DS concept double-crown gasket missing on fake DS Action Diver", "Precidrive quartz accuracy far less than claimed on fakes"],
+      references: {
+        "DS Action Diver": { refs: ["C032.407.11.051.00","C032.607.11.051.00"], case: "43mm", bezel: "Unidirectional ceramic", lug_width: "21mm" },
+        "DS-1 Powermatic 80": { refs: ["C029.807.11.031.00","C029.807.16.031.00"], case: "40mm", bezel: "Smooth polished", lug_width: "20mm" }
+      },
+      price_floor: 350
+    },
+
+    "Frederique Constant": {
+      founded: 1988,
+      serial: { format: /^[A-Z0-9]{6,8}$/, note: "6–8 alphanumeric on caseback." },
+      crystal: "Sapphire with AR coating on all models.",
+      movement_notes: "In-house FC-xxx calibres (FC-303, FC-704, FC-310). Slimline Automatic uses FC-306 — 42-hour power reserve. Heartbeat (open heart) models have aperture at 4:30 showing oscillating balance wheel.",
+      known_fakes: ["Open heart aperture cutout edges are rough — genuine are smooth and chamfered", "FC logo on rotor incorrect font weight", "Fleurier Tourbillon — tourbillon cage rotation speed wrong (should be 1 rpm)"],
+      references: {
+        "Slimline Moonphase": { refs: ["FC-702V3S4","FC-701V3H4"], case: "42mm", bezel: "Smooth polished", lug_width: "21mm" },
+        "Classic Runabout": { refs: ["FC-303RM5B6","FC-303WGH5B6"], case: "42mm", bezel: "Smooth polished", lug_width: "21mm" },
+        "Classics Index": { refs: ["FC-303M5B4","FC-303BL5B4"], case: "42mm", bezel: "Smooth polished", lug_width: "21mm" }
+      },
+      price_floor: 500
+    },
+
+    "Nomos Glashütte": {
+      founded: 1990,
+      serial: { format: /^\d{5,7}$/, note: "5–7 numeric on movement and caseback. Made in Glashütte, Germany." },
+      crystal: "Sapphire, flat on most models. AR coated.",
+      movement_notes: "Entirely in-house Alpha, DUW 3001, DUW 6101 calibres. Swing system in-house lever escapement (patented). German silver three-quarter plate, blued screws, Glashütte ribbing. Club Sport uses DUW 3001 — COSC-rated accuracy.",
+      known_fakes: ["Nomos dial simplicity is deceptive — any smudging, uneven print or incorrect typography is a red flag", "DUW movement has very specific plate architecture — any deviations are immediately visible", "Tangente hands have specific geometric width — wrong on all known fakes", "Glashütte three-quarter plate German silver is distinctive — cheap fakes use generic ETA plates"],
+      references: {
+        "Tangente": { refs: ["101","102","103","139"], case: "35mm", bezel: "Smooth round", lug_width: "18mm" },
+        "Club": { refs: ["711","712","760","764"], case: "36/38mm", bezel: "Smooth round", lug_width: "20mm" },
+        "Orion": { refs: ["321","322","323"], case: "38.5mm", bezel: "Smooth round", lug_width: "20mm" }
+      },
+      price_floor: 1200
+    },
+
+    "Sinn": {
+      founded: 1961,
+      serial: { format: /^\d{6,8}$/, note: "6–8 numeric on caseback." },
+      crystal: "Sapphire with AR coating. Ar-dehumidified models have copper sulphate in crown.",
+      movement_notes: "ETA-based movements. Sinn applies proprietary TEGIMENT hardening (surface steel hardness >1300 Vickers). Oil-filled diving instruments (e.g. 212) — movement runs in oil. Deoiled and dry capsule technology on aviation watches.",
+      known_fakes: ["TEGIMENT steel shows scratches — genuine is nearly scratch-proof", "Oil-filled models: oil level and movement visibility wrong on fakes", "Sinn logo has specific typeface — sans-serif with exact proportions"],
+      references: {
+        "556 A RSC": { refs: ["556.0106"], case: "38.5mm", bezel: "Fixed smooth", lug_width: "20mm" },
+        "104": { refs: ["104.010","104.011"], case: "38.5mm pilot", bezel: "Fixed smooth black", lug_width: "20mm" },
+        "757": { refs: ["757.030","757.0312"], case: "46mm", bezel: "Bidirectional 60-min", lug_width: "22mm" }
+      },
+      price_floor: 800
+    },
+
+    "Ball Watch": {
+      founded: 1891,
+      serial: { format: /^[A-Z0-9]{7,9}$/, note: "7–9 alphanumeric on caseback." },
+      crystal: "Sapphire with AR coating. Anti-magnetic to 4,800 A/m.",
+      movement_notes: "ETA and in-house RR-series movements. Self-powered micro gas light tubes (trigalight) — no battery needed for lume, glows for 25 years. Railroad standard accuracy (±/- 0.5s/day for Hamilton Railroad models).",
+      known_fakes: ["Trigalight tubes are uniform green glow — fakes use lume paint that looks uneven", "Engineer Hydrocarbon caseback engravings shallower than genuine", "Ball logo has specific sans-serif proportion"],
+      references: {
+        "Engineer Hydrocarbon": { refs: ["DM2036C-S1CAJ-BK","NM1020C-L4J-BK"], case: "40mm", bezel: "Fixed smooth", lug_width: "20mm" },
+        "Fireman Storm Chaser": { refs: ["CM3090C-S3J-BK","CM3090C-S2J-WH"], case: "46mm", bezel: "Fixed smooth", lug_width: "22mm" },
+        "Roadmaster Rescue": { refs: ["DM3130B-S1CJ-WH","DM3130B-S3CJ-BK"], case: "42mm", bezel: "Fixed smooth", lug_width: "22mm" }
+      },
+      price_floor: 500
+    },
+
+    "Raymond Weil": {
+      founded: 1976,
+      serial: { format: /^\d{6,8}$/, note: "6–8 numeric on caseback." },
+      crystal: "Sapphire with AR coating on all models.",
+      movement_notes: "ETA Sellita-based Swiss movements. Freelancer uses SW200-1 (ETA 2824-2 equivalent). Music-themed naming — Maestro, Freelancer, Toccata, Parsifal, Nabucco.",
+      known_fakes: ["RW logo typeface incorrect — the 'W' has specific angle proportions", "Maestro open heart movement finish visible through dial aperture — rough on fakes", "Geneva waves (Côtes de Genève) on rotor not straight on fakes"],
+      references: {
+        "Freelancer Automatic": { refs: ["2740-ST-50001","2725-ST-97001"], case: "42mm", bezel: "Smooth polished", lug_width: "22mm" },
+        "Maestro Open Heart": { refs: ["2238-PC5-00659","2238-STC-00659"], case: "39.5mm", bezel: "Smooth polished", lug_width: "20mm" },
+        "Toccata": { refs: ["5485-STC-00300","5488-STC-00300"], case: "39mm", bezel: "Smooth polished", lug_width: "19mm" }
+      },
+      price_floor: 400
+    },
+
+    "Victorinox": {
+      founded: 1884,
+      serial: { format: /^[A-Z0-9]{8,10}$/, note: "8–10 alphanumeric on caseback." },
+      crystal: "Sapphire with AR coating on Dive Master and INOX.",
+      movement_notes: "Swiss ETA Sellita movements. INOX certified to 130+ tests including MIL-STD-810G (drop, vibration, magnetic). Ambassador uses ETA 955.112 quartz.",
+      known_fakes: ["Swiss Army cross logo on dial has specific shield shape — simplified on fakes", "INOX case should withstand 130 toughness tests — fake materials obvious from weight", "Maverick bracelet integrated fit is loose on fakes"],
+      references: {
+        "INOX Carbon": { refs: ["241741","241742"], case: "43mm", bezel: "Fixed Fibrox", lug_width: "22mm" },
+        "Dive Master 500": { refs: ["241786","241787"], case: "46mm", bezel: "Unidirectional", lug_width: "24mm" },
+        "Alliance Sport Chronograph": { refs: ["241820","241821"], case: "44mm", bezel: "Fixed tachymetre", lug_width: "22mm" }
+      },
+      price_floor: 200
+    },
+
+    "Fossil": {
+      founded: 1984,
+      serial: { format: /^[A-Z]{2}\d{4}[A-Z]?$/, note: "Standard model number format e.g. FS5813. Serial inside caseback." },
+      crystal: "Mineral glass standard; sapphire on Neutra and higher lines.",
+      movement_notes: "Japanese Miyota quartz or automatic. Machine Automatic uses Miyota 8215. Townsman uses Miyota 8N24. Clean and reliable but not Swiss precision — positioned as fashion watches.",
+      known_fakes: ["Fossil counterfeit volume is low but exists for Grant and Townsman automatics", "Rotor engraving 'FOSSIL' missing or font incorrect", "Dial texture flat instead of structured on fake Townsman"],
+      references: {
+        "Townsman Automatic": { refs: ["ME3110","ME3061"], case: "44mm", bezel: "Smooth polished", lug_width: "22mm" },
+        "Machine Automatic": { refs: ["FS5969","FS5970"], case: "42mm", bezel: "Fixed smooth", lug_width: "22mm" },
+        "Minimalist": { refs: ["FS5304","FS5305"], case: "44mm", bezel: "Fixed smooth", lug_width: "22mm" }
+      },
+      price_floor: 150
+    },
+
+    "Vincero": {
+      founded: 2014,
+      serial: { format: /^[A-Z0-9]{6,8}$/, note: "Alphanumeric on caseback." },
+      crystal: "Sapphire coating (not solid sapphire) on Collective models. Hardened mineral on Chrono S.",
+      movement_notes: "Japanese Miyota quartz and automatic (8N20/8215). Direct-to-consumer brand — no Swiss designation. Sells via social media. Common on secondary market from gifting.",
+      known_fakes: ["Vincero fakes rare — brand itself is positioned as premium fashion, not luxury, so counterfeit demand is low", "Check Miyota movement number against stated calibre"],
+      references: {
+        "Collective": { refs: ["Collective-S1","Collective-M1"], case: "42mm", bezel: "Fixed smooth", lug_width: "22mm" },
+        "Chrono S": { refs: ["CS-BM-ROS","CS-BM-BLK"], case: "44mm", bezel: "Fixed smooth", lug_width: "22mm" }
+      },
+      price_floor: 150
+    },
+
+    "Timex": {
+      founded: 1854,
+      serial: { format: /^[A-Z0-9]{6,10}$/, note: "Model reference on caseback. Individual serial on strap buckle on some models." },
+      crystal: "Mineral glass standard; sapphire on Q Timex and MK1 higher lines.",
+      movement_notes: "Proprietary US-developed quartz. INDIGLO backlight is Timex's patented electroluminescent technology — all digits illuminate simultaneously in teal. Automatic models use Miyota 8215.",
+      known_fakes: ["INDIGLO glow uneven or wrong colour on counterfeits", "Q Timex (reissue) has incorrect vintage typography — specific retro font required", "Expedition bracelet links feel hollow on fakes"],
+      references: {
+        "Q Timex Reissue": { refs: ["TW2U61300","TW2T80400"], case: "38mm", bezel: "Rotating coin-edge aluminium", lug_width: "18mm" },
+        "Waterbury Traditional": { refs: ["TW2R25600","TW2R72600"], case: "40mm", bezel: "Smooth polished", lug_width: "20mm" },
+        "Expedition Scout": { refs: ["TW4B14200","TW4B26600"], case: "40mm", bezel: "Fixed smooth", lug_width: "20mm" }
+      },
+      price_floor: 150
+    }
+  }
+};
+
+// Convenience lookup
+function getBrandData(brand) {
+  if (!brand) return null;
+  const key = Object.keys(WATCH_AUTH_CHECKLIST.brands).find(
+    k => k.toLowerCase() === brand.toLowerCase() || brand.toLowerCase().includes(k.toLowerCase())
+  );
+  return key ? WATCH_AUTH_CHECKLIST.brands[key] : null;
+}
+
+function getChecklistSummary() {
+  return WATCH_AUTH_CHECKLIST.authentication_categories.map(c => c.name + ': ' + c.checks.slice(0,2).join('; ')).join('\n');
+}
+
+// ── PROMPTS ───────────────────────────────────────────────────────────────────
+const P_DB = `You are WatchDBBuilder, a world-class luxury watch authentication expert (2026 knowledge).
+
+UNIVERSAL AUTHENTICATION TESTS (apply to all watches):
+${UNIVERSAL_AUTH_TESTS.physical.map(t => '• ' + t.name + ': PASS = ' + t.pass + ' | FAIL = ' + t.fail).join('\n')}
+${UNIVERSAL_AUTH_TESTS.visual.map(t => '• ' + t.name + ': PASS = ' + t.pass + ' | FAIL = ' + t.fail).join('\n')}
+
+AUTHENTICATION CHECKLIST CATEGORIES:
+${WATCH_AUTH_CHECKLIST.authentication_categories.map(c => c.id + '. ' + c.name + ': ' + c.checks.join(' | ')).join('\n')}
+
+PHOTO ANALYSIS (extract from any image):
+${Object.entries(WATCH_AUTH_CHECKLIST.photo_extractable).map(([k,v]) => k.replace(/_/g,' ') + ': ' + v.join(', ')).join('\n')}
+
+Receive watch credentials + photo. Apply universal tests + brand-specific knowledge. Create/update a structured DB entry. Output ONLY valid JSON:
+{"action":"created"|"updated"|"skipped_duplicate","entry":{"brand":"","model":"","reference":"","year_range":"","serial_format":"","key_authentic_features":["8-12 specific genuine traits — serial location/format, crystal type, movement calibre, lume colour, bracelet screws, clasp engravings, case finishing"],"telltale_signs_of_inauthenticity":{"common_fake_indicators":["specific red flags from universal tests + brand internet-sourced indicators"],"visual_checks":["dial print quality, logo proportions, lume evenness, hand finishing, bezel alignment, crystal AR tint, cyclops magnification"],"movement_checks":["seconds hand motion (sweep vs tick), crown feel, rotor sound, calibre engravings"],"physical_checks":["weight vs spec, magnet test, case edge sharpness, bracelet link gap, clasp click quality"]},"confidence_notes":"any caveats"}}`;
+
+const P_XREF = `You are WatchCrossRefAgent. You have a comprehensive watch authentication memory bank.
+
+UNIVERSAL AUTHENTICATION TESTS (run these against the submission):
+Physical: ${UNIVERSAL_AUTH_TESTS.physical.map(t => t.name + ' (' + t.id + ')').join(', ')}
+Visual: ${UNIVERSAL_AUTH_TESTS.visual.map(t => t.name + ' (' + t.id + ')').join(', ')}
+Documentation: ${UNIVERSAL_AUTH_TESTS.documentation.map(t => t.name).join(', ')}
+
+COUNTERFEIT TYPES TO IDENTIFY: ${Object.entries(UNIVERSAL_AUTH_TESTS.counterfeit_types).map(([k,v]) => k + ': ' + v.slice(0,60)).join(' | ')}
+
+AUTHENTICATION CHECKLIST (12 categories):
+${WATCH_AUTH_CHECKLIST.authentication_categories.map(c => c.id + '. ' + c.name + ': ' + c.checks.join(' | ')).join('\n')}
+
+Cross-reference the submitted watch against the watches_db AND apply all universal tests to any image provided. Output ONLY valid JSON:
+{"step":"1 - Database Cross-Reference","match_level":"exact"|"close"|"no_match"|"possible_superclone","matched_reference":"Brand Model Ref#","key_matches":["specific passing tests from universal checklist"],"key_discrepancies":["specific failing tests — name the test and what was observed"],"checklist_flags":{"serial_ok":true|false,"movement_ok":true|false,"dial_ok":true|false,"crystal_ok":true|false,"bracelet_ok":true|false,"case_ok":true|false,"finishing_ok":true|false},"universal_tests_applied":["list which of the 10 universal physical/visual tests could be assessed"],"db_recommendation":"strong_authentic"|"suspicious"|"needs_step2"|"fake_likely","summary_for_user":"2-3 sentence plain English summary referencing specific test results"}`;
+
+const P_AUTH = `You are WatchAuthAgent — independent senior luxury watch authenticator with full 2026 counterfeit knowledge.
+
+UNIVERSAL AUTHENTICATION TESTS — apply ALL of these:
+${UNIVERSAL_AUTH_TESTS.physical.map(t => t.id + ': ' + t.name + ' — FAIL indicators: ' + t.fail).join('\n')}
+${UNIVERSAL_AUTH_TESTS.visual.map(t => t.id + ': ' + t.name + ' — FAIL indicators: ' + t.fail).join('\n')}
+
+BRAND-SPECIFIC INTERNET-SOURCED INDICATORS (use if brand matches):
+${Object.entries(UNIVERSAL_AUTH_TESTS.brand_specific_internet).map(([brand, checks]) => brand + ': ' + checks.join(' | ')).join('\n')}
+
+PHOTO ANALYSIS — extract from image:
+${Object.entries(WATCH_AUTH_CHECKLIST.photo_extractable).map(([k,v]) => k.replace(/_/g,' ') + ': ' + v.join(', ')).join('\n')}
+
+SUPERCLONE AWARENESS: As of 2025 only 20% of counterfeits are immediately obvious. Superfakes use CNC cases, genuine Swiss movements, and accurate logos. Check movement architecture, not just appearance.
+
+Given the watch submission + photo + Step 1 result: perform complete independent authentication across ALL universal tests AND brand-specific checks. Output ONLY valid JSON:
+{"step":"2 - General AI Authentication","overall_verdict":"Genuine"|"Likely Genuine"|"Suspicious"|"Likely Fake"|"Fake","confidence_score":0-100,"detailed_analysis":{"visual_checks":["result of each visual test applied: dial_print, dial_colour, lume, crystal, caseback, hands, cyclops, bezel, serial_format"],"technical_checks":["weight test result, crown test, second_hand motion, magnet test, case_feel, bracelet_links, clasp, sound"],"red_flags":["specific FAILING tests with what was observed — e.g. 'cyclops: date fills only 60% of window (should be 95%+)'"],"green_flags":["specific PASSING tests with what was observed"]},"checklist_score":{"serial":0-10,"movement":0-10,"dial":0-10,"crystal":0-10,"bracelet":0-10,"case_finishing":0-10},"counterfeit_type_suspected":"Replica|Frankenwatch|Superfake|Homage|None","final_recommendation":"Actionable advice — name specific tests that need physical verification if photo-only","two_step_combined_verdict":"Combine Step 1 and Step 2 into one clear conclusion referencing key passing and failing tests"}`;
+
+// ── DEEP OFFLINE DATABASE ENGINE ─────────────────────────────────────────────
+// Runs entirely from the brand database — no API, no internet required.
+// Shows an interactive checklist the user fills in, then scores and verdicts.
+
+let checklistAnswers = {}; // { checkId: true/false }
+
+function runOfflineChecklist(s) {
+  const bd = getBrandData(s.brand);
+  const panel = document.getElementById('checklist-panel');
+  panel.style.display = 'block';
+  checklistAnswers = {};
+
+  const price  = parseFloat(s.price) || 0;
+  const serial = (s.serial || '').trim();
+
+  // ── AUTO-EVALUATE everything from submitted data ───────────────────────────
+  const autoResults = [];
+
+  // 1. Serial number
+  if (serial) {
+    const fmtOk = bd ? bd.serial.format.test(serial) : null;
+    autoResults.push({
+      section: 'Serial Number',
+      label: 'Serial format — ' + serial,
+      detail: bd ? bd.serial.note : 'Format check requires brand in database',
+      status: fmtOk === true ? 'pass' : fmtOk === false ? 'fail' : 'warn',
+      badge: fmtOk === true ? 'pass' : fmtOk === false ? 'fail' : 'warn',
+      badgeText: fmtOk === true ? 'Correct' : fmtOk === false ? 'Wrong format' : 'Unverified',
+      score: fmtOk === true ? 10 : fmtOk === false ? -15 : 0
+    });
+  } else {
+    autoResults.push({
+      section: 'Serial Number',
+      label: 'Serial number — not provided',
+      detail: 'Cannot validate format or run stolen-watch registry check',
+      status: 'fail', badge: 'fail', badgeText: 'Missing', score: -8
+    });
+  }
+
+  // 2. Price vs market floor
+  if (bd && price > 0) {
+    const floor = bd.price_floor;
+    const ratio = price / floor;
+    const priceStatus = ratio >= 0.7 ? 'pass' : ratio >= 0.4 ? 'warn' : 'fail';
+    autoResults.push({
+      section: 'Price Check',
+      label: `Listed at $${price.toLocaleString()} — ${s.brand} floor $${floor.toLocaleString()}`,
+      detail: ratio < 0.4
+        ? '⚠ Price is ' + Math.round((1-ratio)*100) + '% below market — high counterfeit risk'
+        : ratio < 0.7
+        ? 'Price is below typical market value — verify condition and provenance'
+        : 'Price is consistent with ' + s.brand + ' market rates',
+      status: priceStatus, badge: priceStatus,
+      badgeText: ratio >= 0.7 ? 'Consistent' : ratio >= 0.4 ? 'Low' : 'Suspicious',
+      score: ratio >= 0.7 ? 8 : ratio >= 0.4 ? 0 : -20
+    });
+  }
+
+  // 3. Reference number match
+  let refMatch = null;
+  if (bd && s.ref) {
+    for (const [model, data] of Object.entries(bd.references || {})) {
+      if (data.refs.some(r => r.toLowerCase() === s.ref.toLowerCase())) {
+        refMatch = { model, data }; break;
+      }
+    }
+    autoResults.push({
+      section: 'Reference Check',
+      label: refMatch
+        ? `Ref. ${s.ref} matches — ${refMatch.model}`
+        : `Ref. ${s.ref} — not in local database`,
+      detail: refMatch
+        ? `Case: ${refMatch.data.case} · Bezel: ${refMatch.data.bezel} · Lug: ${refMatch.data.lug_width}`
+        : 'Reference may be valid but is not in current database. Verify against brand catalogue.',
+      status: refMatch ? 'pass' : 'warn',
+      badge: refMatch ? 'pass' : 'warn',
+      badgeText: refMatch ? 'Matched' : 'Unverified',
+      score: refMatch ? 12 : 0
+    });
+  }
+
+  // 4. Papers / provenance
+  const papersOk = s.papers === 'Full set';
+  autoResults.push({
+    section: 'Documentation',
+    label: `Box & papers: ${s.papers || 'Not specified'}`,
+    detail: papersOk
+      ? 'Full set increases confidence. Verify card number matches serial.'
+      : 'No papers — common for pre-owned. Increases importance of physical checks.',
+    status: papersOk ? 'pass' : 'warn',
+    badge: papersOk ? 'pass' : 'warn',
+    badgeText: papersOk ? 'Present' : 'Absent',
+    score: papersOk ? 5 : 0
+  });
+
+  // 5. Description red flag scan
+  const suspicious = ['replica','rep','clone','homage','copy','fake','aaa','super clone','1:1','gen2','noob'];
+  const descText = ((s.desc||'') + ' ' + (s.model||'')).toLowerCase();
+  const foundFlag = suspicious.find(t => descText.includes(t));
+  if (foundFlag) {
+    autoResults.push({
+      section: 'Description Scan',
+      label: `Suspicious keyword detected: "${foundFlag}"`,
+      detail: 'Description contains language commonly associated with counterfeit listings',
+      status: 'fail', badge: 'fail', badgeText: 'Red flag', score: -35
+    });
+  }
+
+  // ── VISUAL CHECKS — things to look at on the watch ───────────────────────
+  // These are shown as inspection guidance, not tick boxes
+  const brandChecks = bd ? bd.known_fakes : [];
+  const brandSpecific = UNIVERSAL_AUTH_TESTS.brand_specific_internet[s.brand] || [];
+
+  const visualInspections = [
+    // DIAL
+    {
+      section: 'Dial',
+      items: [
+        { label: 'Logo & text printing', detail: 'Should be razor-sharp with no bleeding, blurring, or uneven spacing. Fakes often have slightly heavier or lighter font weight.' },
+        { label: 'Dial colour & finish', detail: bd ? `${s.brand} dials use specific lacquers — check against reference photos. Colour should be uniform with no patches.` : 'Check colour matches reference photos exactly. Fakes often have off-shade dials.' },
+        { label: 'Lume application', detail: 'Lume plots should be even, sitting flush in their indexes with no overflow or crazing. Check under UV light if possible.' },
+        { label: 'Hands shape & finish', detail: 'Hand shape, length, and finishing (brushed/polished) must match the specific reference. Check under magnification for burrs.' },
+        ...(s.brand === 'Rolex' ? [{ label: 'Cyclops lens magnification', detail: 'Date must fill 95%+ of the Cyclops window at 2.5× magnification. Fakes typically show only 60–70% fill.' }] : []),
+        ...(s.brand === 'Rolex' ? [{ label: 'Micro-etched crown at 6 o\'clock', detail: 'Genuine Rolex have a micro-etched Rolex crown on the crystal at 6 o\'clock, visible only under magnification or bright light.' }] : []),
+      ]
+    },
+    // CASE
+    {
+      section: 'Case & Finishing',
+      items: [
+        { label: 'Brushed vs polished surfaces', detail: 'Transitions between brushed and polished surfaces should be razor-sharp. Fakes often have blended or uneven finishing.' },
+        { label: 'Case back engravings', detail: bd ? `${s.brand} case backs have specific engraving depth and font. Check the text spacing and depth under magnification.` : 'Engravings should be deep and crisp. Shallow or laser-etched text is a red flag.' },
+        { label: 'Crown feel', detail: 'Screw-down crown should thread smoothly and lock securely. Pull-out positions should have distinct, positive clicks. A loose or wobbly crown is a red flag.' },
+        ...(refMatch ? [{ label: `Case shape — ${refMatch.data.case}`, detail: `This reference should have a ${refMatch.data.case} case. Check dimensions if possible.` }] : []),
+      ]
+    },
+    // CRYSTAL
+    {
+      section: 'Crystal',
+      items: [
+        { label: 'AR coating tint', detail: bd ? bd.crystal : 'Sapphire crystal shows a blue/green anti-reflective tint at certain angles. Mineral glass shows no tint and scratches more easily.' },
+        { label: 'Crystal clarity', detail: 'Should be optically perfect — no distortion, bubbles, or haze. Tap test: sapphire has a higher pitch than mineral glass.' },
+      ]
+    },
+    // BRACELET
+    {
+      section: 'Bracelet & Clasp',
+      items: [
+        ...(refMatch ? [{ label: `Lug width — ${refMatch.data.lug_width}`, detail: `Correct lug width for this reference is ${refMatch.data.lug_width}. Wrong strap width immediately flags a frankenwatch.` }] : [{ label: 'Bracelet/strap type', detail: 'Verify correct bracelet type for this specific reference — bracelet swaps are a common frankenwatch tell.' }]),
+        { label: 'Link quality & screws', detail: 'Solid end links should fit flush to the case with no gap. Links should use screws not friction pins on genuine pieces. No wobble.' },
+        { label: 'Clasp engravings & mechanism', detail: `${s.brand} clasps have specific engravings. Micro-adjust mechanism (if applicable) should click positively and hold under tension.` },
+      ]
+    },
+    // MOVEMENT (caseback if visible)
+    ...(s.imageData ? [{
+      section: 'Movement (if visible)',
+      items: [
+        { label: 'Seconds hand sweep', detail: 'Genuine automatic movements sweep smoothly (6–8 ticks/sec minimum). A clearly ticking seconds hand in an "automatic" is a fake.' },
+        { label: 'Rotor sound', detail: 'Genuine rotor has a smooth, refined spin with no rattling. Cheap fakes have a harsh, loud rotor sound.' },
+        { label: 'Movement finishing', detail: 'Bridges and plates should have Côtes de Genève, perlage, or blued screws appropriate to the brand. Cheap machining marks = fake.' },
+      ]
+    }] : []),
+  ];
+
+  // Brand-specific checks from database
+  const brandFlagItems = [...brandChecks, ...brandSpecific].slice(0, 8);
+
+  // ── CALCULATE AUTO SCORE ──────────────────────────────────────────────────
+  let score = 55; // base score
+  autoResults.forEach(r => { score += r.score; });
+  // Bonus for having photo and complete data
+  if (s.imageData) score += 5;
+  if (s.brand && s.model && s.ref && s.serial) score += 8;
+  score = Math.max(0, Math.min(99, score));
+
+  const scoreColor = score >= 78 ? 'var(--green-l)' : score >= 50 ? 'var(--amber-l)' : 'var(--red-l)';
+  const verdictText = score >= 78 ? 'Looking Authentic' : score >= 65 ? 'Likely Genuine' : score >= 50 ? 'Needs Review' : score >= 25 ? 'Suspicious' : 'Likely Fake';
+  const failCount = autoResults.filter(r => r.status === 'fail').length;
+  const passCount = autoResults.filter(r => r.status === 'pass').length;
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  panel.innerHTML = `
+    <div class="vi-header">
+      <div style="font-size:0.44rem;letter-spacing:0.24em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem">Automated Visual Inspection Report</div>
+      <div style="font-size:0.88rem;font-family:var(--serif);color:var(--bright);margin-bottom:0.25rem">${s.brand} ${s.model}${s.ref ? ' · Ref. ' + s.ref : ''}</div>
+      ${bd ? `<div style="font-size:0.54rem;color:var(--dim)">Est. ${bd.founded} · ${bd.crystal} · ${bd.movement_notes.split('.')[0]}</div>` : ''}
+      <div class="vi-score-row" style="margin-top:0.9rem">
+        <div>
+          <div class="vi-score-num" style="color:${scoreColor}">${score}/100</div>
+          <div class="vi-verdict" style="color:${scoreColor}">${verdictText}</div>
+        </div>
+        <div style="text-align:right;font-size:0.54rem;color:var(--dim)">
+          <div style="color:var(--green-l)">${passCount} auto-passed</div>
+          <div style="color:var(--red-l)">${failCount} flagged</div>
+          <div>${s.imageData ? 'Photo provided' : 'No photo'}</div>
+        </div>
+      </div>
+      <div class="vi-bar"><div class="vi-bar-fill" style="width:${score}%;background:${scoreColor}"></div></div>
+      <div class="vi-auto-row">
+        <span>Auto-evaluated from submitted data</span>
+        <span>${autoResults.length} checks completed</span>
+      </div>
+    </div>
+
+    <!-- AUTO-EVALUATED RESULTS -->
+    <div class="vi-section">
+      <div class="vi-section-title">Auto-Evaluated Checks</div>
+      ${autoResults.map(r => `
+        <div class="vi-check ${r.status}">
+          <div class="vi-icon">${r.status === 'pass' ? '✓' : r.status === 'fail' ? '✗' : '⚠'}</div>
+          <div class="vi-text">
+            <div class="vi-label">${r.label}</div>
+            <div class="vi-detail">${r.detail}</div>
+          </div>
+          <div class="vi-badge ${r.badge}">${r.badgeText}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- VISUAL INSPECTIONS — what to look at on the watch -->
+    ${visualInspections.map(sec => `
+      <div class="vi-section">
+        <div class="vi-section-title">👁 ${sec.section} — Look at the watch</div>
+        ${sec.items.map(item => `
+          <div class="vi-check manual">
+            <div class="vi-icon" style="color:var(--gold)">→</div>
+            <div class="vi-text">
+              <div class="vi-label">${item.label}</div>
+              <div class="vi-detail">${item.detail}</div>
+            </div>
+            <div class="vi-badge check">Check</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+
+    <!-- BRAND-SPECIFIC RED FLAGS -->
+    ${brandFlagItems.length > 0 ? `
+      <div class="vi-section">
+        <div class="vi-section-title" style="color:var(--red-l)">⚠ Known ${s.brand} Fake Indicators</div>
+        ${brandFlagItems.map(f => `
+          <div class="vi-flag-row">
+            <div style="color:var(--red-l);font-size:0.7rem;flex-shrink:0">✗</div>
+            <div class="vi-flag-text">${f}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <button class="vi-run-btn" onclick="finaliseOfflineVerdict()">Generate Audit Report →</button>
+  `;
+
+  // Store auto results for finaliseOfflineVerdict
+  panel._autoResults = autoResults;
+  panel._score = score;
+  panel._verdictText = verdictText;
+  panel._visualSections = visualInspections;
+  panel._brandFlags = brandFlagItems;
+}
+
+// clToggle / collectSections / updateLiveScore retained as no-ops for safety
+function clToggle() {}
+function collectSections() { return { positive: [], redFlag: [] }; }
+function updateLiveScore() {}
+
+function finaliseOfflineVerdict() {
+  const panel = document.getElementById('checklist-panel');
+  const autoResults = panel._autoResults || [];
+  const score       = panel._score || 50;
+  const verdictText = panel._verdictText || 'Needs Review';
+
+  const s  = slots[activeSlot];
+  const bd = getBrandData(s.brand);
+
+  const passedChecks   = autoResults.filter(r => r.status === 'pass').map(r => r.label);
+  const failedChecks   = autoResults.filter(r => r.status === 'fail').map(r => r.label);
+  const flagChecks     = autoResults.filter(r => r.status === 'fail' || r.status === 'warn').map(r => r.detail);
+
+  const verdictStr = score>=78?'Likely Genuine':score>=65?'Possible Genuine':score>=50?'Suspicious':score>=25?'Likely Fake':'Fake';
+  const VM = {'Likely Genuine':'PASS','Possible Genuine':'REVIEW','Suspicious':'REVIEW','Likely Fake':'FAIL','Fake':'FAIL'};
+  const verdict = VM[verdictStr] || 'REVIEW';
+
+  const step1 = {
+    step: '1 - Database Cross-Reference',
+    match_level: bd ? (s.ref ? 'close' : 'no_match') : 'no_match',
+    matched_reference: s.brand + ' ' + s.model + (s.ref ? ' Ref.' + s.ref : ''),
+    key_matches: passedChecks.slice(0, 5),
+    key_discrepancies: failedChecks.slice(0, 5),
+    db_recommendation: score >= 75 ? 'strong_authentic' : score >= 50 ? 'needs_step2' : 'suspicious',
+    summary_for_user: `Auto inspection completed for ${s.brand} ${s.model}. ${passedChecks.length} checks passed, ${failedChecks.length} flagged. Score: ${score}/100.`
+  };
+
+  const step2 = {
+    step: '2 - Visual Inspection Authentication',
+    overall_verdict: verdictStr,
+    confidence_score: score,
+    detailed_analysis: {
+      visual_checks: (panel._visualSections||[]).flatMap(s => s.items.map(i => i.label)),
+      technical_checks: passedChecks,
+      red_flags: [...failedChecks, ...(panel._brandFlags||[]).slice(0,3)],
+      green_flags: passedChecks
+    },
+    checklist_score: { serial: 0, movement: 0, dial: 0, crystal: 0, bracelet: 0, case_finishing: 0 },
+    final_recommendation: failedChecks.length > 0
+      ? `Issues detected: ${failedChecks[0]}${failedChecks.length > 1 ? ' and ' + (failedChecks.length-1) + ' more.' : '.'} Physical expert inspection strongly recommended.`
+      : score >= 75
+        ? 'Auto-checks pass. Complete the visual inspection checks shown above before approving.'
+        : 'Score below threshold. Requires expert physical inspection before approval.',
+    two_step_combined_verdict: `Automated inspection score: ${score}/100 (${verdictStr}). ${passedChecks.length} auto-checks passed, ${failedChecks.length} flagged. ${score >= 75 ? 'Visual inspection checks above should be completed to confirm.' : 'Do not approve without expert physical review.'}`
+  };
+
+  panel.style.display = 'none';
+
+  if (verdict === 'PASS') {
+    slots[activeSlot].status = 'authenticated';
+    slots[activeSlot].authReport = { step1, step2, score };
+    log('check', 'Auto-inspection PASSED — complete visual checks before publishing.');
+  } else if (verdict === 'REVIEW') {
+    log('warn', 'Flagged for review — complete visual checks and override if satisfied.');
+  } else {
+    slots[activeSlot].status = 'rejected';
+    log('err', 'Auto-inspection: REJECTED — ' + (failedChecks[0] || 'score too low'));
+  }
+
+  authHistory.unshift({ slotId: activeSlot+1, brand:s.brand, model:s.model, score, verdict, timestamp: new Date().toISOString() });
+  saveState(); renderSlotRow(); renderLiveGrid();
+  renderReport(step1, step2, score, verdict);
+
+  authRunning = false;
+  const btn = document.getElementById('post-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Post & Audit'; }
+
+  setStep(2);
+  log('gold', '──────────────────────────────────');
+  log(verdict==='PASS'?'check':verdict==='REVIEW'?'warn':'err', `FINAL — ${verdict} — ${score}/100 — ${verdictStr}`);
+}
+
+// ── OFFLINE SCORE HELPER (used when checklist engine can't run) ───────────────
+function offline(s) {
+  const hasS = !!s.serial, hasR = !!s.ref, hasI = !!s.imageData;
+  const p = parseFloat(s.price);
+  let sc = 55;
+
+  // Field completeness
+  if (hasS) sc += 10;
+  if (hasR) sc += 8;
+  if (hasI) sc += 8;
+  if (s.brand && s.model) sc += 5;
+  if (s.condition) sc += 2;
+  if (s.desc && s.desc.length > 30) sc += 2;
+
+  // Brand-specific price floor check
+  const bd = getBrandData(s.brand);
+  if (bd) {
+    if (p >= bd.price_floor) sc += 5;
+    else if (p > 0 && p < bd.price_floor * 0.5) sc -= 20; // suspiciously cheap
+  } else if (p >= 250) sc += 3;
+
+  // Serial format check against brand
+  if (hasS && bd && bd.serial.format) {
+    if (bd.serial.format.test(s.serial)) sc += 5;
+    else sc -= 10;
+  }
+
+  // Known fake language in description
+  const suspicious = ['replica','rep','clone','homage','copy','fake','aaa','super clone','1:1','gen2'];
+  if (suspicious.some(t => ((s.desc||'')+(s.model||'')).toLowerCase().includes(t))) sc -= 35;
+
+  sc = Math.max(0, Math.min(99, sc));
+
+  const vd = sc>=80 ? 'Genuine' : sc>=65 ? 'Likely Genuine' : sc>=45 ? 'Suspicious' : sc>=25 ? 'Likely Fake' : 'Fake';
+
+  const discrepancies = [];
+  if (!hasS) discrepancies.push('No serial — stolen registry check and format validation skipped');
+  if (!hasR) discrepancies.push('No reference number — cannot cross-check model specifications');
+  if (!hasI) discrepancies.push('No image — visual checklist (dial, crystal, bracelet, finishing) not assessable');
+  if (bd && hasS && !bd.serial.format.test(s.serial)) discrepancies.push('Serial format does not match ' + s.brand + ' specification: ' + bd.serial.note);
+  if (bd && p > 0 && p < bd.price_floor * 0.5) discrepancies.push('Price significantly below ' + s.brand + ' market floor ($' + bd.price_floor.toLocaleString() + ') — high replica risk');
+
+  const redFlags = [...discrepancies];
+  if (bd && bd.known_fakes && !hasI) redFlags.push('Cannot verify visual red flags for ' + s.brand + ' without image');
+
+  const greenFlags = [];
+  if (s.papers === 'Full set') greenFlags.push('Full box and papers claimed — increases provenance confidence');
+  if (bd) greenFlags.push(s.brand + ' is a recognised luxury manufacturer in the database');
+  if (hasS && bd && bd.serial.format.test(s.serial)) greenFlags.push('Serial number format matches ' + s.brand + ' specification');
+  if (p >= (bd ? bd.price_floor : 250)) greenFlags.push('Asking price consistent with market range');
+
+  // Checklist summary for offline mode
+  const checklistCategories = WATCH_AUTH_CHECKLIST.authentication_categories.map(c =>
+    c.name + ': ' + (hasI && [5,6,7,10].includes(c.id) ? 'Image available for partial check' : 'Requires physical inspection')
+  );
+
+  return {
+    step1: {
+      step: '1 - Database Cross-Reference',
+      match_level: hasR ? 'close' : 'no_match',
+      matched_reference: (s.brand||'') + ' ' + (s.model||'') + (s.ref ? ' Ref.' + s.ref : ''),
+      key_matches: greenFlags.length ? greenFlags : ['Submission received'],
+      key_discrepancies: discrepancies,
+      checklist_flags: {
+        serial_ok: hasS && bd ? bd.serial.format.test(s.serial) : hasS,
+        movement_ok: null,
+        dial_ok: hasI ? null : false,
+        crystal_ok: hasI ? null : false,
+        bracelet_ok: hasI ? null : false,
+        case_ok: hasI ? null : false,
+        finishing_ok: hasI ? null : false
+      },
+      db_recommendation: sc>=75 ? 'strong_authentic' : sc>=55 ? 'needs_step2' : 'suspicious',
+      summary_for_user: 'Offline check for ' + (s.brand||'unknown') + ' ' + (s.model||'unknown') + '. Score: ' + sc + '/100. ' + (hasI ? 'Image provided for visual assessment.' : 'No image — add photo for full visual authentication.') + (bd ? ' Brand recognised in database.' : ' Brand not in local database.')
+    },
+    step2: {
+      step: '2 - General AI Authentication',
+      overall_verdict: vd,
+      confidence_score: sc,
+      detailed_analysis: {
+        visual_checks: hasI
+          ? ['Image provided — dial, case, bracelet, crystal visually assessable']
+          : WATCH_AUTH_CHECKLIST.photo_extractable.red_flags.map(f => 'Cannot check: ' + f),
+        technical_checks: [
+          hasS ? 'Serial ' + s.serial + ' submitted' : 'No serial number — authentication incomplete',
+          hasR ? 'Reference ' + s.ref + ' on record' : 'No reference — model spec verification skipped',
+          bd ? 'Brand in database: ' + s.brand + ' (est. ' + bd.founded + ')' : 'Brand not in local database'
+        ],
+        red_flags: redFlags,
+        green_flags: greenFlags
+      },
+      checklist_score: {
+        serial: hasS ? (bd && bd.serial.format.test(s.serial) ? 9 : 5) : 0,
+        movement: 0,
+        dial: hasI ? 5 : 0,
+        crystal: hasI ? 5 : 0,
+        bracelet: hasI ? 5 : 0,
+        case_finishing: hasI ? 5 : 0
+      },
+      final_recommendation: sc >= 75
+        ? 'Offline indicators are positive. For full authentication: verify movement (checklist item 3), inspect crystal AR coating (item 6), check bracelet screws (item 7), and confirm provenance (item 12).'
+        : 'Insufficient data for confident authentication. Upload a clear photo and provide serial + reference number. Key missing checks: ' + discrepancies.slice(0,2).join('; '),
+      two_step_combined_verdict: 'Offline score ' + sc + '/100 (' + vd + '). ' + (sc >= 75 ? 'Positive indicators present.' : 'Flags raised.') + ' Full AI authentication with image recommended for definitive result.'
+    },
+    score: sc
+  };
+}
+
+// ── POST & AUTHENTICATE ───────────────────────────────────────────────────────
+async function postAndAuthenticate() {
+  if (authRunning) return;
+  const price = parseFloat(document.getElementById('f-price').value);
+  if (!document.getElementById('f-brand').value) { log('err','Brand is required.'); return; }
+  if (!price || price < 250) { log('err','Price must be at least $250.'); document.getElementById('f-price-err').classList.add('show'); return; }
+
+  saveFormToSlot();
+  slots[activeSlot].status = 'filled';
+  saveState(); renderSlotRow();
+
+  const s   = slots[activeSlot];
+  const key = (document.getElementById('api-key-input').value || localStorage.getItem('hg_api_key') || localStorage.getItem('tk_api_key') || '').trim();
+  const keyType = getKeyType(key);
+  const live = keyType !== 'none';
+
+  authRunning = true;
+  const btn = document.getElementById('post-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Auditing…';
+  document.getElementById('report-out').style.display = 'none';
+  document.getElementById('checklist-panel').style.display = 'none';
+  resetSteps();
+
+  // Update mode badge
+  const badge = document.getElementById('mode-badge');
+  if (badge) {
+    const providerLabel = keyType === 'gemini' ? 'Gemini (Optimised)' : keyType === 'anthropic' ? 'Claude (Fallback)' : 'Database Mode';
+    badge.textContent = live ? providerLabel : 'Database Mode';
+    badge.style.borderColor = live ? 'var(--green)' : 'var(--gold)';
+    badge.style.color = live ? 'var(--green-l)' : 'var(--gold)';
+  }
+
+  // On mobile, automatically switch to pipeline view
+  if (window.innerWidth <= 768) mobSwitch('pipe');
+
+  // OFFLINE: run the interactive database checklist
+  if (!live) {
+    log('gold', `━━ Database Checklist Mode — No API Key ━━`);
+    log('info', `Slot ${activeSlot+1} — ${s.brand} ${s.model}`);
+    log('info', 'Running brand database lookup…');
+    await delay(500);
+    setStep(0);
+    const bd = getBrandData(s.brand);
+    if (bd) {
+      log('check', `${s.brand} found in database (est. ${bd.founded}) — ${Object.keys(bd.references||{}).length} reference models loaded`);
+    } else {
+      log('warn', `${s.brand||'Brand'} not found in local database — using generic checklist`);
+    }
+    await delay(400);
+    setStep(1);
+    log('info', 'Loading authentication checklist…');
+    await delay(300);
+    log('check', 'Checklist ready — complete each section below');
+    log('gold', '──────────────────────────────────');
+    log('info', '↓ Tick the items you can confirm below ↓');
+
+    // Show the interactive checklist
+    runOfflineChecklist(s);
+
+    // Button stays disabled until finaliseOfflineVerdict() is called
+    btn.innerHTML = 'Completing audit checklist…';
+    // authRunning stays true — finaliseOfflineVerdict resets it
+    return;
+  }
+
+  const desc = `Brand:${s.brand||'?'} | Model:${s.model||'?'} | Ref:${s.ref||'?'} | Serial:${s.serial||'?'} | Year:${s.year||'?'} | Case:${s.casemat||'?'} | Dial:${s.dial||'?'} | Condition:${s.condition||'?'} | Papers:${s.papers} | Price:${s.price?'$'+s.price:'?'} | Notes:${s.desc||'none'} | Image:${s.imageData?'provided':'none'}`;
+
+  const hasPhoto = !!s.imageData;
+  const costEst = keyType === 'gemini'
+    ? (hasPhoto ? '~$0.003' : '~$0.001')
+    : keyType === 'anthropic' ? '~$0.022' : '$0.00';
+
+  log('gold', `━━ Slot ${activeSlot+1} — ${s.brand} ${s.model} — ${keyType === 'gemini' ? 'Gemini Optimised' : keyType === 'anthropic' ? 'Claude Fallback' : 'Offline'} ━━`);
+  log('info', `Est. cost this check: ${costEst} · ${hasPhoto ? 'Photo provided — vision analysis enabled' : 'No photo — text analysis only'}`);
+  if (keyType === 'gemini') log('check', `Using ${hasPhoto ? 'Gemini 2.5 Flash (vision)' : 'Gemini 2.5 Flash-Lite (text)'} — 97% cheaper than Sonnet`);
+  if (keyType === 'anthropic') log('warn', 'Using Claude Haiku (Anthropic key) — switch to Google AI key for lowest cost');
+
+  let r1, r2, score;
+
+  try {
+
+    try {
+      setStep(0); log('gold','── Agent 0: WatchDBBuilder…');
+      const dbMsg=`New watch:\n${desc}\n\nExisting DB: ${JSON.stringify(watchDB.map(e=>({brand:e.brand,model:e.model,ref:e.reference})))}`;
+      const dbR = await callAI(P_DB, dbMsg, key, s.imageData||null);
+      if (dbR.action!=='skipped_duplicate'&&dbR.entry) {
+        const ei=watchDB.findIndex(e=>e.brand===dbR.entry.brand&&e.model===dbR.entry.model);
+        if(ei>=0)watchDB[ei]=dbR.entry; else watchDB.push(dbR.entry);
+        saveWatchDB();
+      }
+      log('check',`DB — ${dbR.action} · ${watchDB.length} entries`);
+      await delay(200);
+
+      setStep(1); log('gold','── Step 1: WatchCrossRefAgent…');
+      r1 = await callAI(P_XREF, `Watch:\n${desc}\n\nDB:\n${JSON.stringify(watchDB)}`, key);
+      log('check',`Step 1 — ${r1.match_level} · ${r1.db_recommendation}`);
+      log('info', r1.summary_for_user); await delay(200);
+
+      setStep(2); log('gold','── Step 2: WatchAuthAgent…');
+      if (s.imageData) log('info','Sending photo for visual analysis');
+      r2 = await callAI(P_AUTH, `Watch:\n${desc}\n\nStep 1:\n${JSON.stringify(r1)}`, key, s.imageData||null);
+      score = r2.confidence_score;
+      log('check',`Step 2 — ${r2.overall_verdict} · ${score}/100`);
+      log('info', r2.two_step_combined_verdict);
+
+    } catch(err) {
+      log('err',`Error: ${err.message}`);
+      if (err.message.includes('Invalid image'))    log('warn','Re-upload photo as JPG or PNG');
+      else if (err.message.includes('HTTP 4'))      log('warn','Check your API key');
+      else                                          log('warn','API error — check key and try again');
+      if (!r1) r1 = { step:'1 - Database Cross-Reference', match_level:'no_match', matched_reference: s.brand+' '+s.model, key_matches:[], key_discrepancies:['API call failed'], db_recommendation:'needs_step2', summary_for_user:'API error. Remove API key to use offline Database Mode.' };
+      if (!r2) r2 = { step:'2 - General AI Authentication', overall_verdict:'Suspicious', confidence_score:30, detailed_analysis:{visual_checks:[],technical_checks:[],red_flags:['API authentication failed'],green_flags:[]}, final_recommendation:'API error. Use offline Database Mode (clear API key field).', two_step_combined_verdict:'Could not complete AI authentication.' };
+      if (!score) score = 30;
+    }
+
+    score = (score!==undefined&&score!==null) ? score : (r2.confidence_score||0);
+
+    const VM={'Genuine':'PASS','Likely Genuine':'PASS','Suspicious':'REVIEW','Likely Fake':'FAIL','Fake':'FAIL'};
+    const verdict = VM[r2.overall_verdict] || (score>=78?'PASS':score>=50?'REVIEW':'FAIL');
+
+    log('info','──────────────────────────────────');
+    log(verdict==='PASS'?'check':verdict==='REVIEW'?'warn':'err',
+      `FINAL — ${verdict} — ${score}/100 — ${r2.overall_verdict}`);
+
+    if (verdict==='PASS') {
+      slots[activeSlot].status='authenticated';
+      slots[activeSlot].authReport={step1:r1,step2:r2,score};
+      log('check','Authenticated ✓  Click Publish to go live.');
+    } else if (verdict==='REVIEW') {
+      log('warn','Flagged for review — you can override and publish.');
+    } else {
+      slots[activeSlot].status='rejected';
+      log('err','Listing rejected.');
+    }
+
+    authHistory.unshift({slotId:activeSlot+1,brand:s.brand,model:s.model,score,verdict,timestamp:new Date().toISOString()});
+    saveState(); renderSlotRow(); renderLiveGrid();
+    renderReport(r1, r2, score, verdict);
+
+  } catch(fatal) {
+    log('err',`Fatal: ${fatal.message}`);
+  } finally {
+    authRunning = false;
+    btn.disabled = false;
+    btn.textContent = 'Post & Audit';
+  }
+}
+
+// ── REPORT ────────────────────────────────────────────────────────────────────
+function renderReport(r1, r2, score, verdict) {
+  const sc  = verdict==='PASS' ? 'var(--green-l)' : verdict==='REVIEW' ? 'var(--amber-l)' : 'var(--red-l)';
+  const vc  = verdict==='PASS' ? 'vp' : verdict==='REVIEW' ? 'vr' : 'vf';
+  const mc  = {exact:'var(--green-l)',close:'var(--amber-l)',no_match:'var(--dim)',possible_superclone:'var(--red-l)'};
+  const li  = arr => (arr||[]).filter(Boolean).map(x=>`<div class="ri">${x}</div>`).join('');
+  const s   = slots[activeSlot];
+  const bd  = getBrandData(s.brand);
+  const el  = document.getElementById('report-out');
+
+  // ── Build the verdict reasoning ──────────────────────────────────────────
+  const reasons = [];
+  const positives = [];
+
+  // Score band
+  if (score >= 80)      positives.push(`High confidence score of ${score}/100`);
+  else if (score >= 65) reasons.push(`Moderate score of ${score}/100 — below the 78-point PASS threshold`);
+  else                  reasons.push(`Low score of ${score}/100 — significant concerns raised`);
+
+  // Serial
+  if (s.serial) {
+    if (bd && bd.serial.format.test(s.serial)) {
+      positives.push(`Serial "${s.serial}" matches ${s.brand} format (${bd.serial.note})`);
+    } else if (bd) {
+      reasons.push(`Serial "${s.serial}" does NOT match ${s.brand} format — expected: ${bd.serial.note}`);
+    } else {
+      positives.push(`Serial number provided: ${s.serial}`);
+    }
+  } else {
+    reasons.push('No serial number provided — stolen watch registry check cannot be performed');
+  }
+
+  // Reference
+  if (s.ref) {
+    let refFound = null;
+    if (bd) {
+      for (const [model, data] of Object.entries(bd.references||{})) {
+        if ((data.refs||[]).some(r => r.toLowerCase() === s.ref.toLowerCase())) {
+          refFound = `Reference ${s.ref} matches known ${s.brand} ${model} (${data.case} case, ${data.bezel})`;
+          break;
+        }
+      }
+    }
+    if (refFound) positives.push(refFound);
+    else if (bd)  reasons.push(`Reference "${s.ref}" not found in local ${s.brand} database — may be genuine but unverified`);
+    else          positives.push(`Reference number provided: ${s.ref}`);
+  } else {
+    reasons.push('No reference number — model specification cross-check skipped');
+  }
+
+  // Price
+  const price = parseFloat(s.price);
+  if (bd && price > 0) {
+    if (price < bd.price_floor * 0.5) {
+      reasons.push(`Price $${price.toLocaleString()} is less than 50% of typical ${s.brand} market floor ($${bd.price_floor.toLocaleString()}) — high counterfeit risk indicator`);
+    } else if (price >= bd.price_floor * 0.7) {
+      positives.push(`Price $${price.toLocaleString()} is consistent with ${s.brand} market range (floor: $${bd.price_floor.toLocaleString()})`);
+    } else {
+      reasons.push(`Price $${price.toLocaleString()} is below typical ${s.brand} market floor ($${bd.price_floor.toLocaleString()})`);
+    }
+  }
+
+  // Image
+  if (s.imageData) positives.push('Watch photo provided — visual analysis performed by AI');
+  else             reasons.push('No photo uploaded — visual authentication (dial, crystal, bracelet, finishing) could not be assessed');
+
+  // Papers
+  if (s.papers === 'Full set') positives.push('Full box and papers claimed — increases provenance confidence');
+  else if (s.papers === 'None') reasons.push('No box or papers — provenance unverifiable');
+
+  // AI flags from step 2
+  if (r2.detailed_analysis?.red_flags?.length) {
+    r2.detailed_analysis.red_flags.slice(0,3).forEach(f => reasons.push(f));
+  }
+  if (r2.detailed_analysis?.green_flags?.length) {
+    r2.detailed_analysis.green_flags.slice(0,3).forEach(f => positives.push(f));
+  }
+
+  // Suspicious language
+  const suspiciousWords = ['replica','clone','homage','copy','fake','1:1','super clone'];
+  const descLower = ((s.desc||'')+(s.model||'')).toLowerCase();
+  const foundWord = suspiciousWords.find(w => descLower.includes(w));
+  if (foundWord) reasons.push(`Description or model contains suspicious term: "${foundWord}"`);
+
+  // Verdict sentence
+  const verdictSentence = verdict === 'PASS'
+    ? `This listing <strong style="color:var(--green-l)">passed the audit</strong> with a score of ${score}/100. It shows consistent indicators of authenticity across the fields provided and has been marked as Authenticated. It is ready to publish to the marketplace.`
+    : verdict === 'REVIEW'
+    ? `This listing has been <strong style="color:var(--amber-l)">flagged for manual review</strong> with a score of ${score}/100. Some concerns were identified that could not be automatically resolved. An expert physical inspection is recommended before publishing.`
+    : `This listing <strong style="color:var(--red-l)">failed the audit</strong> with a score of ${score}/100. Significant red flags were detected. The listing has been rejected and should not be published without further verification.`;
+
+  // Submitted details summary
+  const detailRows = [
+    ['Brand', s.brand||'—'],
+    ['Model', s.model||'—'],
+    ['Reference', s.ref||'Not provided'],
+    ['Serial', s.serial||'Not provided'],
+    ['Year', s.year||'—'],
+    ['Condition', s.condition||'—'],
+    ['Case', s.casemat||'—'],
+    ['Papers', s.papers||'—'],
+    ['Price', s.price ? '$'+parseInt(s.price).toLocaleString() : '—'],
+    ['Image', s.imageData ? '✓ Provided' : '✗ Not provided'],
+  ].map(([k,v]) => `
+    <div style="padding:0.45rem 0.75rem;border-bottom:0.5px solid var(--bdr);display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;flex-wrap:wrap">
+      <span style="font-size:0.44rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);flex-shrink:0">${k}</span>
+      <span style="font-size:0.58rem;color:var(--mid);text-align:right">${v}</span>
+    </div>`).join('');
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="report-card">
+
+      <!-- HEAD: score + verdict -->
+      <div class="report-head">
+        <div>
+          <div style="font-size:0.44rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:2px">Slot ${activeSlot+1} — ${s.brand} ${s.model}</div>
+          <div style="font-size:0.48rem;color:var(--dim)">${new Date().toLocaleString()}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;justify-content:flex-end">
+          <div class="report-score" style="color:${sc}">${score}<span style="font-size:0.75rem;opacity:0.5">/100</span></div>
+          <div class="report-verdict ${vc}">${verdict} — ${r2.overall_verdict}</div>
+        </div>
+      </div>
+
+      <!-- VERDICT REASONING -->
+      <div style="padding:0.85rem 0.9rem;border-bottom:0.5px solid var(--bdr)">
+        <div style="font-size:0.44rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem">Why this verdict</div>
+        <div style="font-size:0.62rem;color:var(--mid);line-height:1.7;margin-bottom:0.75rem">${verdictSentence}</div>
+        <div class="reason-row" style="display:flex;gap:0.75rem">
+          ${positives.length ? `
+          <div class="reason-item" style="flex:1;min-width:0">
+            <div style="font-size:0.44rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--green-l);margin-bottom:0.4rem">Factors supporting PASS</div>
+            ${positives.map(p=>`<div style="font-size:0.58rem;color:var(--dim);margin-bottom:4px;line-height:1.4;padding-left:0.75rem;border-left:2px solid var(--green)">✓ ${p}</div>`).join('')}
+          </div>` : ''}
+          ${reasons.length ? `
+          <div class="reason-item" style="flex:1;min-width:0">
+            <div style="font-size:0.44rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--red-l);margin-bottom:0.4rem">Factors against</div>
+            ${reasons.map(r=>`<div style="font-size:0.58rem;color:var(--dim);margin-bottom:4px;line-height:1.4;padding-left:0.75rem;border-left:2px solid var(--red)">✗ ${r}</div>`).join('')}
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- SUBMITTED DETAILS -->
+      <div style="padding:0.6rem 0;border-bottom:0.5px solid var(--bdr)">
+        <div style="font-size:0.44rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);padding:0 0.75rem;margin-bottom:0.2rem">Submitted details</div>
+        ${detailRows}
+      </div>
+
+      <!-- DB CROSS-REFERENCE + AI ANALYSIS -->
+      <div class="report-body">
+        <div>
+          <div class="rbt">DB Cross-Reference</div>
+          <div style="font-size:0.5rem;color:${mc[r1.match_level]||'var(--dim)'};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.35rem">${(r1.match_level||'').replace(/_/g,' ')}</div>
+          ${li(r1.key_matches)}
+          ${r1.key_discrepancies?.length ? `<div class="rbt" style="color:var(--red-l);margin-top:0.5rem">Discrepancies</div>${li(r1.key_discrepancies)}` : ''}
+        </div>
+        <div>
+          <div class="rbt">AI Analysis</div>
+          ${r2.detailed_analysis?.visual_checks?.length ? `<div class="rbt" style="color:var(--dim)">Visual</div>${li(r2.detailed_analysis.visual_checks)}` : ''}
+          ${r2.detailed_analysis?.technical_checks?.length ? `<div class="rbt" style="color:var(--dim);margin-top:0.3rem">Technical</div>${li(r2.detailed_analysis.technical_checks)}` : ''}
+        </div>
+      </div>
+
+      <!-- COMBINED VERDICT + RECOMMENDATION -->
+      <div class="report-combined">
+        <strong style="color:var(--mid)">Combined conclusion:</strong> ${r2.two_step_combined_verdict}
+        <br><br>
+        <strong style="color:var(--mid)">Recommendation:</strong> ${r2.final_recommendation}
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="report-actions">
+        ${verdict==='PASS'
+          ? `<button class="ra ra-green" onclick="publishSlot()">✓ Publish to Marketplace</button>`
+          : verdict==='REVIEW'
+          ? `<button class="ra ra-gold" onclick="publishSlot()">Override &amp; Publish</button>`
+          : `<button class="ra ra-dim" disabled style="opacity:0.4;cursor:default">Rejected — Cannot Publish</button>`}
+        <button class="ra ra-dim" onclick="postAndAuthenticate()">Re-run Audit</button>
+      </div>
+    </div>`;
+
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── PUBLISH ───────────────────────────────────────────────────────────────────
+function publishSlot() {
+  slots[activeSlot].status = 'live';
+  saveState(); renderSlotRow(); renderLiveGrid();
+  log('gold',`Slot ${activeSlot+1} — ${slots[activeSlot].brand} ${slots[activeSlot].model} — LIVE on marketplace`);
+  try {
+    const msg = {type:'tk_listing_live', slot:slots[activeSlot]};
+    if (window.opener) window.opener.postMessage(msg,'*');
+    if (window.parent!==window) window.parent.postMessage(msg,'*');
+  } catch(e){}
+}
+
+// ── ALL SLOTS GRID ────────────────────────────────────────────────────────────
+function renderLiveGrid() {
+  const pm={empty:['var(--bdr)','var(--dim)','Empty'],filled:['var(--amber)','var(--amber-l)','Pending'],authenticated:['var(--green)','var(--green-l)','Auth'],live:['var(--gold)','var(--gold)','Live'],rejected:['var(--red)','var(--red-l)','Rejected']};
+  document.getElementById('live-grid').innerHTML = slots.map((s,i)=>{
+    const [bc,tc,lb]=pm[s.status]||pm.empty;
+    return `<div class="lc ${i===activeSlot?'active':''}" onclick="switchSlot(${i})" style="${i===activeSlot?'outline:1px solid var(--gold)':''}">
+      <div class="lc-img">${s.imageData?`<img src="${s.imageData}">`:`<div style="font-size:0.44rem;color:var(--bdr)">${i+1}</div>`}</div>
+      <div class="lc-brand">${s.brand||'—'}</div>
+      <div class="lc-name">${s.model||'Empty'}</div>
+      <div class="lc-pill" style="border-color:${bc};color:${tc}">${lb}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+const sk = localStorage.getItem('tk_api_key')||'';
+if (sk) { document.getElementById('api-key-input').value=sk; saveApiKey(); }
+loadSlotToForm(0);
+renderSlotRow();
+renderLiveGrid();
+</script>
+</body>
+</html>
