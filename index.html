@@ -2424,19 +2424,8 @@ footer{background:var(--surf);border-top:0.5px solid var(--bdr);padding:2.5rem 1
 
     if (!brand) { errEl.textContent = 'Please select a brand.'; errEl.style.display = 'block'; return; }
 
-    // Check for API key — if missing, show settings panel instead of silently failing
-    const apiKey  = getSiteApiKey();
-    const keyType = apiKey.startsWith('AIza') ? 'gemini' : apiKey.startsWith('sk-ant') ? 'anthropic' : 'none';
-
-    if (keyType === 'none') {
-      // No key — show a friendly inline prompt
-      errEl.innerHTML = `No AI key set. <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="toggleApiSettings()">Add your free Google AI key →</span> to run full analysis. Or continue without a key for a basic database check.`;
-      errEl.style.display = 'block';
-      // Still let them continue after 3 seconds or if they dismiss
-      await new Promise(r => setTimeout(r, 200));
-    }
-
-    // Proxy-powered — no usage limit. Badge stays as-is.
+    // Always route through Cloudflare proxy — key is stored there, not in the browser.
+    // Visitors need no API key. The proxy injects the GEMINI_KEY secret.
 
     // Show loading
     document.getElementById('faw-step1').style.display = 'none';
@@ -2450,60 +2439,48 @@ footer{background:var(--surf);border-top:0.5px solid var(--bdr);padding:2.5rem 1
       if (el) el.textContent = steps[si];
     }, 900);
 
-    // Try API — Gemini Flash-Lite (cheapest) or Flash (with photo), Anthropic as fallback
-    const apiKey2 = getSiteApiKey();
-    const keyType2 = apiKey2.startsWith('AIza') ? 'gemini' : apiKey2.startsWith('sk-ant') ? 'anthropic' : 'none';
+    const PROXY = 'https://hourgaurd-proxy.babaadeyeye1.workers.dev';
     let result = null;
 
     try {
       const fileInput = document.getElementById('faw-file');
       const hasImage = fileInput?.files?.[0];
-      const prompt = `Quick authentication check for: ${brand}${model ? ' ' + model : ''}. Give a brief verdict and list 2-3 key things to check. Be specific to this brand. JSON only: {"verdict":"Likely Genuine|Suspicious|Cannot Determine|No Image — Physical Check Required","summary":"2 sentences","checks":["check1","check2","check3"]}`;
+      const geminiModel = hasImage ? 'gemini-2.5-flash' : 'gemini-2.5-flash-lite';
+      const prompt = `You are a luxury watch authentication expert. Analyse this watch: Brand: ${brand}${model ? ', Model: ' + model : ''}. ${hasImage ? 'A photo has been provided — analyse it carefully.' : 'No photo provided — give database-based guidance.'} Respond ONLY with this exact JSON (no markdown, no preamble): {"verdict":"Likely Genuine|Suspicious|Cannot Determine","summary":"2-3 sentence assessment","checks":["specific check 1","specific check 2","specific check 3"]}`;
 
-      if (keyType2 === 'gemini') {
-        // Gemini: Flash-Lite for text (~$0.0007), Flash for vision (~$0.003)
-        const model = hasImage ? 'gemini-2.5-flash' : 'gemini-2.5-flash-lite';
-        const parts = [];
-        if (hasImage) {
-          const b64 = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.readAsDataURL(fileInput.files[0]); });
-          parts.push({ inlineData: { mimeType: fileInput.files[0].type, data: b64 } });
-        }
-        parts.push({ text: prompt });
-        const res = await fetch('https://hourgaurd-proxy.babaadeyeye1.workers.dev', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model,
-            payload: {
-              contents: [{ role: 'user', parts }],
-              generationConfig: { maxOutputTokens: 400, temperature: 0.1 },
-              systemInstruction: { parts: [{ text: 'You are a watch authentication expert. Respond ONLY with valid JSON, no markdown.' }] }
-            }
-          })
+      const parts = [];
+      if (hasImage) {
+        const b64 = await new Promise(res => {
+          const r = new FileReader();
+          r.onload = () => res(r.result.split(',')[1]);
+          r.readAsDataURL(fileInput.files[0]);
         });
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        result = JSON.parse(text.replace(/```json|```/g, '').trim());
-
-      } else if (keyType2 === 'anthropic') {
-        // Anthropic fallback — use Haiku (cheapest Claude with vision)
-        let messages;
-        if (hasImage) {
-          const b64 = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.readAsDataURL(fileInput.files[0]); });
-          messages = [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: fileInput.files[0].type, data: b64 } }, { type: 'text', text: prompt }] }];
-        } else {
-          messages = [{ role: 'user', content: prompt }];
-        }
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey2, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, system: 'You are a watch authentication expert. Respond ONLY with valid JSON, no markdown.', messages })
-        });
-        const data = await res.json();
-        const text = data.content?.[0]?.text || '{}';
-        result = JSON.parse(text.replace(/```json|```/g, '').trim());
+        parts.push({ inlineData: { mimeType: fileInput.files[0].type, data: b64 } });
       }
-    } catch(e) { result = null; }
+      parts.push({ text: prompt });
+
+      const res = await fetch(PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: geminiModel,
+          payload: {
+            contents: [{ role: 'user', parts }],
+            generationConfig: { maxOutputTokens: 500, temperature: 0.1 },
+            systemInstruction: { parts: [{ text: 'You are a watch authentication expert. Respond ONLY with valid JSON.' }] }
+          }
+        })
+      });
+
+      if (!res.ok) throw new Error('Proxy error ' + res.status);
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      result = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    } catch(e) {
+      console.warn('Proxy call failed:', e.message);
+      result = null;
+    }
 
     // Offline fallback using brand DB
     if (!result) {
