@@ -2368,7 +2368,7 @@ footer{background:var(--surf);border-top:0.5px solid var(--bdr);padding:2.5rem 1
         status.textContent = '✓ Anthropic key active';
         status.style.color = 'var(--green-l)';
       } else {
-        status.textContent = 'No key set — add a Google AI key to enable full AI analysis';
+        status.textContent = 'AI running via HourGuard proxy — no personal key needed';
         status.style.color = 'var(--dim)';
       }
     }
@@ -2512,10 +2512,10 @@ footer{background:var(--surf);border-top:0.5px solid var(--bdr);padding:2.5rem 1
       ];
 
       result = {
-        verdict: hadPhoto ? 'Photo Received — AI Key Required' : 'No API Key — Database Check Only',
+        verdict: hadPhoto ? 'Cannot Determine' : 'Cannot Determine',
         summary: hadPhoto
-          ? `Photo received for ${brand}${model ? ' ' + model : ''}. To run full AI visual analysis, add a Google AI key in settings. Below are the key indicators to check manually for this brand.`
-          : `No AI key configured. Using database-only check for ${brand}. ${bd ? `Known specs: ${bd.crystal}. ${bd.movement_notes.split('.')[0]}.` : 'Add a Google AI key for full visual authentication.'}`,
+          ? `Photo received for ${brand}${model ? ' ' + model : ''}. Our system ran a database check for this brand. For a full AI vision analysis, please try again in a moment.`
+          : `Database check for ${brand}. ${bd ? `Key specs: ${bd.crystal}. ${bd.movement_notes.split('.')[0]}.` : 'Select a brand and optionally upload a photo for a full AI analysis.'}`,
         checks
       };
     }
